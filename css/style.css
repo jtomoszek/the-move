@@ -622,9 +622,9 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .path-card .curve-svg {
   position: absolute;
-  left: -6%;
-  top: -8%;
-  width: 112%;
+  right: -7%;
+  top: -12%;
+  width: 85%;
   opacity: 0.9;
   pointer-events: none;
 }
@@ -690,9 +690,9 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .trainer-card .curve-svg {
   position: absolute;
-  left: -6%;
-  bottom: -18%;
-  width: 112%;
+  right: -7%;
+  bottom: -12%;
+  width: 56%;
   opacity: 0.85;
   pointer-events: none;
 }

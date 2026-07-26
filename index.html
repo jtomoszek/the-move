@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Move — Feldenkraisova metoda | Ostrava</title>
+  <meta name="description" content="Více pohybu. Více radosti. Více života. Skupinové lekce Feldenkraisovy metody v Ostravě pod vedením fyzioterapeutky a tanečnice Lenky Schwarzové.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/webp" href="assets/img/logo.webp">
+</head>
+<body>
+
+  <!-- ===== Navigace ===== -->
+  <header class="nav">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo" aria-label="The Move — úvodní stránka">
+        <img src="assets/img/logo.webp" alt="The Move" width="600" height="108">
+      </a>
+
+      <nav>
+        <ul class="nav-menu" id="nav-menu">
+          <li><a class="nav-link" href="index.html#terminy">Termíny akcí</a></li>
+          <li><a class="nav-link" href="jak-zacit.html">Jak začít</a></li>
+          <li><a class="nav-link" href="artists.html">Artists</a></li>
+          <li><a class="nav-link" href="index.html#lektorka">O lektorce</a></li>
+          <li><a class="nav-link" href="index.html#kontakt">Kontakt</a></li>
+        </ul>
+      </nav>
+
+      <a href="index.html#terminy" class="button button--solid nav-cta">Volné termíny</a>
+
+      <button class="nav-burger" aria-label="Otevřít menu" aria-expanded="false" aria-controls="nav-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-topline reveal">
+          <span class="label">Feldenkraisova metoda</span>
+          <span class="label label--plain text-grey">Ostrava</span>
+        </div>
+
+        <h1 class="h-large">
+          <span class="mask-line"><span>Více pohybu.</span></span>
+          <span class="mask-line" style="--reveal-delay:.12s"><span>Více radosti.</span></span>
+          <span class="mask-line" style="--reveal-delay:.24s"><span>Více <em class="text-yellow" style="font-style:normal">života</em>.</span></span>
+        </h1>
+
+        <p class="hero-sub reveal" style="--reveal-delay:.3s">
+          Protože tělo i mysl fungují nejlépe, když se dostanou do harmonie.
+          Otevíráme možnosti zlepšení pohybu skrz vaše vlastní vedení. Lektor
+          navádí pouze slovem, vše ostatní je na vás — váš komfort, tempo i provedení.
+        </p>
+
+        <div class="hero-actions reveal" style="--reveal-delay:.4s">
+          <a href="#terminy" class="button button--solid">Volné termíny</a>
+          <a href="jak-zacit.html" class="button">Jak začít</a>
+        </div>
+
+        <figure class="hero-media reveal" style="--reveal-delay:.5s">
+          <video src="assets/video/cover.mp4" autoplay muted loop playsinline poster="assets/img/photo-01.webp"></video>
+          <svg class="curve-svg hero-curve" viewBox="0 0 900 500" aria-hidden="true">
+            <path d="M 10 480 C 150 320 250 235 345 250 C 470 270 555 335 655 322 C 700 316 712 265 722 200 C 733 128 762 62 832 50 C 882 42 893 92 880 122"/>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ===== Termíny akcí ===== -->
+    <section class="section" id="terminy">
+      <div class="container">
+        <div class="section-head section-head--split">
+          <div class="reveal">
+            <span class="label">Termíny akcí</span>
+            <h2 class="h2" style="margin-top:1.25rem">Volné lekce<br>a kurzy</h2>
+          </div>
+          <p class="text-grey reveal" style="--reveal-delay:.15s">
+            Zkoumáme pohyb v komorních skupinách, abychom zaručili pozornost
+            pro každého z vás. Podívejte se na aktuální volná místa v našem
+            sále a rezervujte si své místo.
+          </p>
+        </div>
+
+        <div class="schedule reveal" id="schedule-list" data-api="api/terminy.php">
+          <p class="schedule-loading text-grey">Načítáme aktuální termíny…</p>
+        </div>
+
+        <div class="schedule-more reveal">
+          <a href="#kontakt" class="button button--solid">Nenašli jste svůj termín? Napište nám</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Metoda / benefity ===== -->
+    <section class="section bg-soft">
+      <div class="container">
+        <div class="section-head section-head--split">
+          <div class="reveal">
+            <span class="label">Proč právě The Move</span>
+            <h2 class="h2" style="margin-top:1.25rem">Metoda, která<br>přináší výsledky</h2>
+          </div>
+          <p class="text-grey reveal" style="--reveal-delay:.15s">
+            Feldenkraisova metoda mění způsob, jakým komunikujete se svým
+            vlastním tělem. V pomalém průběhu a v jemnosti v sobě rozvíjíte
+            obrovský pohybový i duševní potenciál.
+          </p>
+        </div>
+
+        <div class="benefits-grid">
+          <div class="benefit reveal">
+            <span class="benefit-num">(01)</span>
+            <h3 class="h5">Uvolnění a obnova</h3>
+            <p>FM zmírňuje stres a napětí, zklidňuje dech a mozek, zlepšuje
+            náladu, celkovou pohodu a v neposlední řadě koncentraci. Ideální
+            na přetížený nervový systém — pomáhá ubrat a lépe regenerovat.</p>
+          </div>
+          <div class="benefit reveal" style="--reveal-delay:.1s">
+            <span class="benefit-num">(02)</span>
+            <h3 class="h5">Úleva od bolesti</h3>
+            <p>S FM můžete pocítit úlevu od bolesti zad, ztuhlé šíje,
+            přetížených beder a lopatek. Zlepšuje rozsah, pohyblivost,
+            koordinaci, držení těla a celkové pohybové návyky.</p>
+          </div>
+          <div class="benefit reveal" style="--reveal-delay:.2s">
+            <span class="benefit-num">(03)</span>
+            <h3 class="h5">Pohybová svoboda</h3>
+            <p>Nahrazujeme zažité pohybové limity svobodným projevem.
+            Zjistíte, že vaše tělo má na výběr mnohem více možností
+            a variant pohybu, než jste si dosud mysleli.</p>
+          </div>
+          <div class="benefit reveal" style="--reveal-delay:.3s">
+            <span class="benefit-num">(04)</span>
+            <h3 class="h5">Vnitřní harmonie</h3>
+            <p>Propojujeme pohyb s vnitřním prožitkem a přítomností.
+            Rozvíjíme kvalitu vnímání těla s minimálním úsilím bez
+            zbytečného přetížení pro dlouhodobou udržitelnost a plynulost.</p>
+          </div>
+        </div>
+
+        <div class="photo-band">
+          <figure class="reveal"><img src="assets/img/photo-02.webp" alt="Cvičení ve dvojici — dlaně proti sobě" loading="lazy"></figure>
+          <figure class="reveal" style="--reveal-delay:.15s"><img src="assets/img/photo-11.webp" alt="Komorní skupinová lekce na podložkách" loading="lazy"></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Dva směry ===== -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head section-head--split">
+          <div class="reveal">
+            <span class="label">Jak začít</span>
+            <h2 class="h2" style="margin-top:1.25rem">Dva směry<br>pozornosti</h2>
+          </div>
+          <p class="text-grey reveal" style="--reveal-delay:.15s">
+            Zpomalte pro návrat k přirozené lehkosti, nebo využijte vědomý
+            pohyb pro optimalizaci profesionálního výkonu.
+          </p>
+        </div>
+
+        <div class="paths-grid">
+          <a href="jak-zacit.html" class="path-card reveal">
+            <svg class="curve-svg" viewBox="0 0 900 500" aria-hidden="true">
+              <path d="M 10 480 C 150 320 250 235 345 250 C 470 270 555 335 655 322 C 700 316 712 265 722 200 C 733 128 762 62 832 50 C 882 42 893 92 880 122"/>
+            </svg>
+            <span class="path-card-label">Začátek cesty</span>
+            <span class="path-tag">Pro nové zájemce</span>
+            <h3 class="h3">Návrat<br>k lehkosti</h3>
+            <p>Vhodné pro ty, kteří se chtějí lépe hýbat, které trápí sedavé
+            zaměstnání, občasné bolesti, nebo zkrátka preferují pomalé cvičení
+            v tichu bez tlaku na výkon.</p>
+            <span class="link-arrow">Zjistit jak začít <span class="arrow">→</span></span>
+          </a>
+
+          <a href="artists.html" class="path-card reveal" style="--reveal-delay:.15s">
+            <svg class="curve-svg" viewBox="0 0 900 500" aria-hidden="true">
+              <path d="M 880 480 C 740 330 650 240 550 255 C 430 275 350 340 250 325 C 200 318 190 260 180 195 C 170 125 140 60 70 50 C 25 45 10 90 25 120"/>
+            </svg>
+            <span class="path-card-label">Tělo jako profese</span>
+            <span class="path-tag">Pro profíky</span>
+            <h3 class="h3">Artists<br>&amp; sportovci</h3>
+            <p>Způsob, jak reorganizovat zažité pohybové vzorce pro maximální
+            kvalitu a svobodu v pohybu. Navrženo pro herce, tanečníky, hudebníky
+            a sportovce, kteří se svým pohybovým aparátem živí.</p>
+            <span class="link-arrow">Zjistit jak začít <span class="arrow">→</span></span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== O lektorce ===== -->
+    <section class="section bg-soft" id="lektorka">
+      <div class="container">
+        <div class="section-head">
+          <span class="label reveal">O lektorce</span>
+        </div>
+
+        <div class="trainer-grid">
+          <div class="trainer-card reveal">
+            <svg class="curve-svg" viewBox="0 0 900 500" aria-hidden="true">
+              <path d="M 10 480 C 150 320 250 235 345 250 C 470 270 555 335 655 322 C 700 316 712 265 722 200 C 733 128 762 62 832 50 C 882 42 893 92 880 122"/>
+            </svg>
+            <h2 class="h2">Lenka<br>Schwarzová</h2>
+            <blockquote>
+              „Jsem tanečnice a máma dvou dětí. Jsem fyzioterapeut, momentálně
+              na cestě Feldenkraisovy metody, která mě absolutně oslovila.“
+            </blockquote>
+            <p>
+              Pohyb je mou vášní a lidské tělo mě fascinuje odjakživa. Studium
+              fyzioterapie mi dalo hluboké anatomické základy a vhled do pohybové
+              patologie, ale až Feldenkraisova metoda mi zprostředkovala radost
+              z pohybu ve svobodě bez hodnocení.
+            </p>
+            <a href="jak-zacit.html" class="link-arrow">Vědět více o lektorce <span class="arrow">→</span></a>
+          </div>
+
+          <figure class="trainer-photo reveal" style="--reveal-delay:.15s">
+            <img src="assets/img/photo-03.webp" alt="Lenka Schwarzová — lektorka Feldenkraisovy metody" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Kontakt ===== -->
+    <section class="section" id="kontakt">
+      <div class="container">
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="reveal">
+              <span class="label">Kontakt</span>
+              <h2 class="h2" style="margin-top:1.25rem">Spojte se<br>s námi</h2>
+            </div>
+            <p class="text-grey reveal" style="--reveal-delay:.1s">
+              Zaujala vás Feldenkraisova metoda, potřebujete zkonzultovat své
+              limity nebo se chcete doptat na volný termín? Vyplňte formulář
+              a my se vám co nejdříve ozveme.
+            </p>
+            <div class="contact-direct reveal" style="--reveal-delay:.2s">
+              <a href="mailto:info@themove.cz">info@themove.cz</a>
+              <a href="tel:+420778889332">+420 778 889 332</a>
+            </div>
+          </div>
+
+          <form class="form reveal" style="--reveal-delay:.2s" novalidate>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="f-name">Vaše jméno</label>
+                <input type="text" id="f-name" name="name" required autocomplete="name">
+              </div>
+              <div class="form-field">
+                <label for="f-email">Váš e-mail</label>
+                <input type="email" id="f-email" name="email" required autocomplete="email">
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="f-message">Vaše zpráva</label>
+              <textarea id="f-message" name="message" required></textarea>
+            </div>
+            <div class="form-footer">
+              <div class="form-field form-check">
+                <label for="f-check">2 + 8 =</label>
+                <input type="number" id="f-check" name="check" data-check="10" required>
+              </div>
+              <button type="submit" class="button button--solid">Odeslat</button>
+            </div>
+            <p class="form-note">Odesláním souhlasíte se zpracováním osobních údajů za účelem vyřízení poptávky.</p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section class="section section--top" style="padding-bottom:var(--section-pad)">
+      <div class="container">
+        <div class="section-head">
+          <span class="label reveal">FAQ</span>
+          <h2 class="h2 reveal" style="--reveal-delay:.1s">Nejčastější otázky</h2>
+        </div>
+
+        <div class="faq-list reveal">
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              Co je to vlastně Feldenkraisova metoda?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Jedná se o celosvětově uznávaný systém somatického vzdělávání.
+              Nezaměřuje se na posilování nebo mechanické opakování, ale na
+              kultivaci uvědomění si vlastního těla skrze jemný, vědomý pohyb
+              naváděný slovem lektora.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              Je tato praxe vhodná i při chronických potížích?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Ano, metoda je mimořádně vhodná pro lidi s chronickými bolestmi
+              zad, kloubů či svalů. Pomáhá najít a uvolnit zažité kompenzační
+              vzorce, které potíže udržují.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              Musím mít předchozí zkušenost s pohybovou terapií?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Vůbec ne. Lekce pro veřejnost jsou navrženy tak, aby byly
+              přístupné každému bez ohledu na věk, ohebnost či kondici.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== Rezervační okno ===== -->
+  <div class="modal" id="booking-modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="booking-title">
+      <button class="modal-close" type="button" data-close aria-label="Zavřít">×</button>
+      <span class="label">Rezervace místa</span>
+      <h3 class="h4" id="booking-title" style="margin-top:1rem">Rezervovat lekci</h3>
+      <p class="modal-lesson text-grey"></p>
+
+      <form class="booking-form" novalidate>
+        <input type="hidden" name="termin_id" value="">
+        <!-- honeypot proti robotům -->
+        <input type="text" name="web" tabindex="-1" autocomplete="off" style="position:absolute;left:-5000px" aria-hidden="true">
+        <div class="form-field">
+          <label for="b-name">Vaše jméno</label>
+          <input type="text" id="b-name" name="jmeno" required autocomplete="name">
+        </div>
+        <div class="form-field">
+          <label for="b-email">Váš e-mail</label>
+          <input type="email" id="b-email" name="email" required autocomplete="email">
+        </div>
+        <div class="form-field">
+          <label for="b-phone">Telefon (nepovinné)</label>
+          <input type="tel" id="b-phone" name="telefon" autocomplete="tel">
+        </div>
+        <p class="booking-error" hidden></p>
+        <button type="submit" class="button button--solid">Odeslat rezervaci</button>
+        <p class="form-note">Odesláním souhlasíte se zpracováním osobních údajů za účelem rezervace lekce.</p>
+      </form>
+
+      <div class="booking-success" hidden>
+        <p></p>
+        <button type="button" class="button" data-close>Zavřít</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="container footer-top">
+      <div class="footer-col">
+        <img src="assets/img/logo.webp" alt="The Move" style="height:26px;width:auto;filter:invert(1);margin-bottom:1.5rem">
+        <p class="footer-tagline">Feldenkraisova metoda v Ostravě. Více pohybu.
+        Více radosti. Více života.</p>
+      </div>
+      <div class="footer-col">
+        <h4 class="h6">Menu</h4>
+        <ul>
+          <li><a href="index.html#terminy">Termíny akcí</a></li>
+          <li><a href="jak-zacit.html">Jak začít</a></li>
+          <li><a href="artists.html">Artists</a></li>
+          <li><a href="index.html#lektorka">O lektorce</a></li>
+          <li><a href="index.html#kontakt">Kontakt</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 class="h6">Kontakt</h4>
+        <ul>
+          <li><a href="mailto:info@themove.cz">info@themove.cz</a></li>
+          <li><a href="tel:+420778889332">+420 778 889 332</a></li>
+          <li><a href="index.html#terminy">Ostrava-Poruba · Poklad</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-marquee" aria-hidden="true">
+      <div class="footer-marquee-track">
+        <span>The Move<em>®</em></span>
+        <span>The Move<em>®</em></span>
+        <span>The Move<em>®</em></span>
+        <span>The Move<em>®</em></span>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <span>© 2026 The Move — Feldenkraisova metoda</span>
+      <span>Ostrava</span>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

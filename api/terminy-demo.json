@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "demo": true,
+  "terminy": [
+    {
+      "id": 1,
+      "den": "Pondělí",
+      "datum": "7. 9. 2026",
+      "cas_od": "17:30",
+      "cas_do": "18:45",
+      "misto": "Ostrava-Poruba · Poklad",
+      "poznamka": "",
+      "kapacita": 8,
+      "volno": 0
+    },
+    {
+      "id": 2,
+      "den": "Pondělí",
+      "datum": "14. 9. 2026",
+      "cas_od": "17:30",
+      "cas_do": "18:45",
+      "misto": "Ostrava-Poruba · Poklad",
+      "poznamka": "",
+      "kapacita": 8,
+      "volno": 2
+    },
+    {
+      "id": 3,
+      "den": "Pondělí",
+      "datum": "21. 9. 2026",
+      "cas_od": "17:30",
+      "cas_do": "18:45",
+      "misto": "Ostrava-Poruba · Poklad",
+      "poznamka": "",
+      "kapacita": 8,
+      "volno": 5
+    },
+    {
+      "id": 4,
+      "den": "Pondělí",
+      "datum": "28. 9. 2026",
+      "cas_od": "17:30",
+      "cas_do": "18:45",
+      "misto": "Ostrava-Poruba · Poklad",
+      "poznamka": "Lekce vhodná i pro úplné začátečníky",
+      "kapacita": 8,
+      "volno": 8
+    }
+  ]
+}

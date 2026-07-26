@@ -1,0 +1,5 @@
+# Lokální databáze s rezervacemi — nikdy nepatří do repozitáře
+data/themove.sqlite
+
+# macOS
+.DS_Store

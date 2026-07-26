@@ -616,15 +616,15 @@ h1, h2, h3, h4, h5, h6, .h-style {
   gap: 1.5rem;
   background: var(--ink);
   color: var(--paper);
-  padding: 3.5rem 3rem;
+  padding: 8.5rem 3rem 3.5rem;
   overflow: hidden;
 }
 
 .path-card .curve-svg {
   position: absolute;
-  right: -7%;
-  top: -12%;
-  width: 85%;
+  right: -6%;
+  top: -8%;
+  width: 100%;
   opacity: 0.9;
   pointer-events: none;
 }
@@ -665,7 +665,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 }
 
 @media screen and (max-width: 479px) {
-  .path-card { padding: 2.5rem 1.5rem; }
+  .path-card { padding: 6rem 1.5rem 2.5rem; }
 }
 
 /* ---------- O lektorce ---------- */
@@ -681,7 +681,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
   position: relative;
   background: var(--ink);
   color: var(--paper);
-  padding: 3.5rem 3rem;
+  padding: 3.5rem 3rem 9rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -690,9 +690,9 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .trainer-card .curve-svg {
   position: absolute;
-  right: -7%;
-  bottom: -12%;
-  width: 56%;
+  right: -6%;
+  bottom: -8%;
+  width: 78%;
   opacity: 0.85;
   pointer-events: none;
 }
@@ -726,7 +726,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 }
 
 @media screen and (max-width: 479px) {
-  .trainer-card { padding: 2.5rem 1.5rem; }
+  .trainer-card { padding: 2.5rem 1.5rem 6.5rem; }
 }
 
 /* ---------- Kontakt ---------- */
@@ -988,15 +988,20 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .cta-band {
   position: relative;
   overflow: hidden;
+  padding-bottom: 14rem;
 }
 
 .cta-band .curve-svg {
   position: absolute;
-  right: -6%;
-  bottom: -20%;
-  width: 50%;
+  right: -5%;
+  bottom: -10%;
+  width: 64%;
   pointer-events: none;
   opacity: 0.9;
+}
+
+@media screen and (max-width: 767px) {
+  .cta-band { padding-bottom: 10rem; }
 }
 
 .cta-inner {
@@ -1214,18 +1219,56 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .is-visible .mask-line > span,
 .mask-line.is-visible > span { transform: translateY(0); }
 
-/* Kreslení žluté křivky */
+/* Kreslení žluté křivky — každý box má vlastní variantu animace */
 .curve-svg path {
   stroke-dasharray: var(--curve-len, 1600);
   stroke-dashoffset: var(--curve-len, 1600);
-  transition: stroke-dashoffset 1.8s cubic-bezier(0.45, 0, 0.2, 1) 0.2s;
 }
 
-.curve-svg.is-visible path { stroke-dashoffset: 0; }
+/* a) klasické pomalé kreslení (hero) */
+.curve-anim-draw path {
+  transition: stroke-dashoffset 2.2s cubic-bezier(0.45, 0, 0.2, 1) 0.3s;
+}
+.curve-anim-draw.is-visible path { stroke-dashoffset: 0; }
+
+/* b) svižné kreslení (první karta) */
+.curve-anim-quick path {
+  transition: stroke-dashoffset 1s cubic-bezier(0.3, 0, 0.2, 1) 0.1s;
+}
+.curve-anim-quick.is-visible path { stroke-dashoffset: 0; }
+
+/* c) kreslení z opačného konce, se zpožděním (druhá karta) */
+.curve-anim-reverse path {
+  stroke-dashoffset: calc(var(--curve-len, 1600) * -1);
+  transition: stroke-dashoffset 2.4s cubic-bezier(0.5, 0, 0.15, 1) 0.55s;
+}
+.curve-anim-reverse.is-visible path { stroke-dashoffset: 0; }
+
+/* d) nájezd celé křivky s natočením (karta lektorky) */
+@keyframes curve-rise {
+  from { opacity: 0; transform: translateY(3rem) rotate(-5deg); }
+}
+.curve-anim-rise path {
+  transition: stroke-dashoffset 1.5s ease-out 0.45s;
+}
+.curve-anim-rise.is-visible { animation: curve-rise 1.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.curve-anim-rise.is-visible path { stroke-dashoffset: 0; }
+
+/* e) kreslení + trvalé jemné plavání (CTA pásy) */
+@keyframes curve-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-1rem); }
+}
+.curve-anim-float path {
+  transition: stroke-dashoffset 2s ease 0.3s;
+}
+.curve-anim-float.is-visible path { stroke-dashoffset: 0; }
+.curve-anim-float.is-visible { animation: curve-float 6s ease-in-out 2.4s infinite alternate; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal, .mask-line > span { opacity: 1; transform: none; transition: none; }
-  .curve-svg path { stroke-dashoffset: 0; transition: none; }
+  .curve-svg path { stroke-dashoffset: 0 !important; transition: none !important; }
+  .curve-svg, .curve-svg.is-visible { animation: none !important; }
   .footer-marquee-track { animation: none; }
 }

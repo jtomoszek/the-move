@@ -578,14 +578,27 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 /* ---------- Foto pás ---------- */
 
-.photo-band {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2.5rem;
+/* Video na celou šířku nad fotopásem */
+.band-video {
   margin-top: 5rem;
+  background: var(--ink);
+  overflow: hidden;
 }
 
-.photo-band figure { overflow: hidden; }
+.band-video video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.photo-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+}
+
+.photo-band figure { overflow: hidden; aspect-ratio: 3 / 2; }
 
 .photo-band img {
   width: 100%;
@@ -596,15 +609,6 @@ h1, h2, h3, h4, h5, h6, .h-style {
 }
 
 .photo-band figure:hover img { transform: scale(1.04); }
-
-.photo-band .band-video { background: var(--ink); }
-
-.photo-band .band-video video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
 
 @media screen and (max-width: 767px) {
   .photo-band { grid-template-columns: 1fr; }

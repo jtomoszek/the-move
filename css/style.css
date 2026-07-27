@@ -1027,6 +1027,120 @@ h1, h2, h3, h4, h5, h6, .h-style {
   background: var(--ink);
 }
 
+/* Hero mřížka: video vlevo, černý box vpravo */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 2.5rem;
+  align-items: stretch;
+  margin-top: 4rem;
+}
+
+.hero-grid .video-figure { align-self: start; }
+
+.promo-box {
+  position: relative;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow: hidden;
+}
+
+.promo-box p {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.875rem;
+  position: relative;
+  z-index: 2;
+}
+
+.promo-box .curve-svg {
+  position: absolute;
+  left: -8%;
+  bottom: -10%;
+  width: 118%;
+  pointer-events: none;
+}
+
+.promo-box .button { margin-top: auto; position: relative; z-index: 2; align-self: flex-start; }
+
+.button--white {
+  background: var(--paper);
+  border-color: var(--paper);
+  color: var(--ink);
+}
+
+.button--white:hover {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--ink);
+}
+
+@media screen and (max-width: 991px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .promo-box { min-height: 24rem; }
+}
+
+/* ---------- Fotorastr ---------- */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 15rem;
+  grid-auto-flow: dense;
+  gap: 1.25rem;
+}
+
+.gallery-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gallery-item:hover img { transform: scale(1.05); }
+
+.gallery-item--tall { grid-row: span 2; }
+.gallery-item--wide { grid-column: span 2; }
+
+/* Tmavá dlaždice s nekonečnou smyčkou žluté linky */
+.gallery-tile-curve {
+  position: relative;
+  background: var(--ink);
+  overflow: hidden;
+}
+
+.gallery-tile-curve .curve-svg {
+  position: absolute;
+  left: -10%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 120%;
+}
+
+.gallery-tile-curve .label {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1.25rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@media screen and (max-width: 991px) {
+  .gallery-grid { grid-auto-rows: 12rem; }
+}
+
+@media screen and (max-width: 767px) {
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 11rem; gap: 0.75rem; }
+}
+
 /* ---------- Obsahové bloky podstránek ---------- */
 
 .split {
@@ -1267,6 +1381,17 @@ h1, h2, h3, h4, h5, h6, .h-style {
 }
 .curve-anim-rise.is-visible { animation: curve-rise 1.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .curve-anim-rise.is-visible path { stroke-dashoffset: 0; }
+
+/* f) nekonečná smyčka — linka se nakreslí, projede a kreslí se znovu */
+@keyframes curve-loop {
+  0%   { stroke-dashoffset: var(--curve-len, 1600); }
+  40%  { stroke-dashoffset: 0; }
+  60%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: calc(var(--curve-len, 1600) * -1); }
+}
+.curve-anim-loop.is-visible path {
+  animation: curve-loop 7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
 
 /* e) kreslení + trvalé jemné plavání (CTA pásy) */
 @keyframes curve-float {

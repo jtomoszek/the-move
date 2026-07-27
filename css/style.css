@@ -1013,6 +1013,20 @@ h1, h2, h3, h4, h5, h6, .h-style {
   z-index: 2;
 }
 
+/* ---------- Video sekce ---------- */
+
+.video-figure {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-figure video {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--ink);
+}
+
 /* ---------- Obsahové bloky podstránek ---------- */
 
 .split {

@@ -597,6 +597,15 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .photo-band figure:hover img { transform: scale(1.04); }
 
+.photo-band .band-video { background: var(--ink); }
+
+.photo-band .band-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 @media screen and (max-width: 767px) {
   .photo-band { grid-template-columns: 1fr; }
 }

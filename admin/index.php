@@ -252,6 +252,8 @@ input:focus { outline:none; border-color:var(--yellow); }
 .btn--ghost { background:transparent; color:var(--ink); }
 .btn--ghost:hover { background:var(--ink); color:var(--paper); }
 .btn--mini { padding:.35rem .75rem; font-size:11px; }
+.btn--potvrdit { background:#d0342c; border-color:#d0342c; color:var(--paper); }
+.btn--potvrdit:hover { background:#b02b24; border-color:#b02b24; color:var(--paper); }
 .hlaska { padding:1rem 1.25rem; margin-bottom:1.5rem; border-left:3px solid var(--yellow); background:var(--paper); }
 .hlaska--chyba { border-left-color:#d0342c; }
 .termin { background:var(--paper); border:1px solid var(--line); margin-bottom:1rem; }
@@ -413,7 +415,8 @@ details[open] summary::before { content:"− "; }
       <?php if (!(int) $t['zverejnit']): ?><span class="badge badge--skryty">Skrytý</span><?php endif; ?>
       <div class="termin-akce">
         <a class="btn btn--ghost btn--mini" href="?edit=<?= (int) $t['id'] ?>">Upravit</a>
-        <form method="post" onsubmit="return confirm('Opravdu smazat termín včetně <?= $obsazeno ?> rezervací?')">
+        <form method="post" data-potvrdit="Opravdu smazat?"
+              title="Smaže termín<?= $obsazeno > 0 ? ' včetně ' . $obsazeno . ' rezervací' : '' ?>">
           <input type="hidden" name="akce" value="smazat">
           <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
           <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
@@ -432,7 +435,7 @@ details[open] summary::before { content:"− "; }
           <span><?= e($r['jmeno']) ?></span>
           <span class="mail"><?= e($r['email']) ?></span>
           <?php if ($r['telefon'] !== ''): ?><span class="tel"><?= e($r['telefon']) ?></span><?php endif; ?>
-          <form method="post" onsubmit="return confirm('Odstranit rezervaci?')">
+          <form method="post" data-potvrdit="Opravdu odstranit?" title="Odstraní rezervaci účastníka">
             <input type="hidden" name="akce" value="smazat_rezervaci">
             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
             <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
@@ -461,5 +464,35 @@ details[open] summary::before { content:"− "; }
 <?php endif; ?>
 
 </div>
+
+<script>
+/* Dvoukrokové potvrzení místo systémového dialogu — první klik tlačítko
+   „nabije" (zčervená), druhý klik akci provede. Po 5 s se samo vrátí zpět.
+   Nezávisí na window.confirm, takže funguje i tam, kde jsou dialogy blokované. */
+document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
+  var btn = form.querySelector('button[type=submit]');
+  var puvodni = btn.textContent;
+  var nabito = false;
+  var casovac;
+
+  function reset() {
+    nabito = false;
+    btn.textContent = puvodni;
+    btn.classList.remove('btn--potvrdit');
+  }
+
+  form.addEventListener('submit', function (e) {
+    if (nabito) { return; }          // druhý klik — odešli
+    e.preventDefault();              // první klik — jen se zeptej
+    nabito = true;
+    btn.textContent = form.dataset.potvrdit;
+    btn.classList.add('btn--potvrdit');
+    clearTimeout(casovac);
+    casovac = setTimeout(reset, 5000);
+  });
+
+  btn.addEventListener('blur', function () { if (nabito) { setTimeout(reset, 200); } });
+});
+</script>
 </body>
 </html>

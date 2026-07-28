@@ -1280,6 +1280,16 @@ h1, h2, h3, h4, h5, h6, .h-style {
   transition: opacity 0.4s;
 }
 
+.story-quote {
+  font-size: 0.875rem;
+  line-height: 160%;
+  font-style: italic;
+  color: var(--grey);
+  border-left: 2px solid var(--yellow);
+  padding-left: 0.85rem;
+  margin-top: 0.6rem !important;
+}
+
 .stories.has-open .story:not(.is-open) .story-caption p { opacity: 0; }
 
 @media screen and (max-width: 767px) {

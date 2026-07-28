@@ -1381,6 +1381,103 @@ h1, h2, h3, h4, h5, h6, .h-style {
   .numbered-item p { grid-column: 1; }
 }
 
+/* ---------- Právní stránky ---------- */
+
+.legal { display: flex; flex-direction: column; }
+
+.legal-block {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 2.5rem;
+  padding: 3rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.legal-block:last-child { border-bottom: 1px solid var(--line); }
+
+.legal-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--grey);
+  letter-spacing: 0.5px;
+}
+
+.legal-body { max-width: 46rem; }
+
+.legal-body h2 { margin-bottom: 1.5rem; }
+
+.legal-body h3 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+  padding-top: 1.25rem;
+}
+
+.legal-body h3::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.25rem;
+  height: 2px;
+  background: var(--yellow);
+}
+
+.legal-body p { color: var(--grey); margin-bottom: 1rem; }
+.legal-body p strong { color: var(--ink); font-weight: 400; }
+
+.legal-body a {
+  color: var(--ink);
+  border-bottom: 1px solid var(--yellow);
+  transition: background-color 0.25s;
+}
+
+.legal-body a:hover { background: var(--yellow); }
+
+.legal-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.legal-list li {
+  color: var(--grey);
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.legal-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 0.75rem;
+  height: 2px;
+  background: var(--yellow);
+}
+
+.legal-list li strong { color: var(--ink); font-weight: 400; }
+
+.legal-highlight {
+  border-left: 2px solid var(--yellow);
+  padding-left: 1.25rem;
+  color: var(--ink) !important;
+  line-height: 180%;
+}
+
+/* dočasné zvýraznění míst, kam se doplní firemní údaje */
+[data-doplnit] {
+  background: rgba(242, 175, 14, 0.18);
+  outline: 1px dashed var(--yellow);
+  outline-offset: 3px;
+}
+
+@media screen and (max-width: 767px) {
+  .legal-block { grid-template-columns: 1fr; gap: 1rem; padding: 2.5rem 0; }
+}
+
 /* ---------- Footer ---------- */
 
 .footer {
@@ -1419,10 +1516,19 @@ h1, h2, h3, h4, h5, h6, .h-style {
   padding: 1.5rem 0;
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.45);
 }
+
+.footer-bottom a {
+  color: rgba(255, 255, 255, 0.65);
+  transition: color 0.25s;
+}
+
+.footer-bottom a:hover { color: var(--yellow); }
 
 /* Obří rolující nápis */
 .footer-marquee {

@@ -642,6 +642,13 @@ h1, h2, h3, h4, h5, h6, .h-style {
   pointer-events: none;
 }
 
+/* varianta přes celou šířku karty — oba konce vybíhají do stran */
+.path-card .curve-svg--full {
+  left: -6%;
+  right: auto;
+  width: 112%;
+}
+
 .path-card-label {
   font-size: 13px;
   letter-spacing: 0.5px;

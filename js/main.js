@@ -277,6 +277,47 @@
     });
   }
 
+  /* ---------- Příběhy (roztahovací video karty) ---------- */
+  var storiesEl = document.getElementById("stories");
+
+  if (storiesEl) {
+    var storyItems = storiesEl.querySelectorAll(".story");
+
+    var closeStory = function (story) {
+      story.classList.remove("is-open");
+      storiesEl.classList.remove("has-open");
+      var v = story.querySelector("video");
+      v.pause();
+    };
+
+    var openStory = function (story) {
+      storyItems.forEach(function (other) {
+        if (other !== story && other.classList.contains("is-open")) {
+          other.classList.remove("is-open");
+          other.querySelector("video").pause();
+        }
+      });
+      storiesEl.classList.add("has-open");
+      story.classList.add("is-open");
+      var v = story.querySelector("video");
+      // krátká prodleva, ať se karta stihne roztáhnout
+      setTimeout(function () {
+        v.play().catch(function () {});
+      }, 400);
+    };
+
+    storyItems.forEach(function (story) {
+      story.addEventListener("click", function () {
+        if (!story.classList.contains("is-open")) { openStory(story); }
+      });
+
+      story.querySelector(".story-close").addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeStory(story);
+      });
+    });
+  }
+
   /* ---------- Kontaktní formulář (mailto) ---------- */
   var form = document.querySelector(".form");
 

@@ -942,6 +942,131 @@ h1, h2, h3, h4, h5, h6, .h-style {
   .modal-box { padding: 2rem 1.5rem; }
 }
 
+/* ---------- Reference (slider) ---------- */
+
+.refs-band {
+  position: relative;
+  overflow: hidden;
+}
+
+.refs-band .curve-svg {
+  position: absolute;
+  right: -5%;
+  bottom: -10%;
+  width: 55%;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.refs {
+  position: relative;
+  z-index: 2;
+  max-width: 56rem;
+}
+
+.refs-track {
+  display: grid;
+  cursor: grab;
+}
+
+.refs-track:active { cursor: grabbing; }
+
+.ref-slide {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(1.5rem);
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.ref-slide.is-active {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.ref-slide blockquote {
+  font-family: var(--font-head);
+  font-size: clamp(1.375rem, 2.4vw, 2rem);
+  font-weight: 400;
+  line-height: 140%;
+  letter-spacing: 0;
+}
+
+.ref-slide blockquote::before { content: "„"; color: var(--yellow); }
+.ref-slide blockquote::after  { content: "“"; color: var(--yellow); }
+
+.ref-slide figcaption {
+  margin-top: 1.75rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.refs-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.refs-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+}
+
+.refs-btn:hover {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--ink);
+}
+
+.refs-counter {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+/* tenká linka ukazující čas do dalšího snímku */
+.refs-progress {
+  flex: 0 1 6rem;
+  height: 2px;
+  background: var(--line-dark);
+  overflow: hidden;
+}
+
+.refs-progress > span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--yellow);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.refs.is-auto .refs-progress > span {
+  animation: refs-progress var(--refs-interval, 7s) linear;
+}
+
+@keyframes refs-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@media screen and (max-width: 479px) {
+  .refs-nav { gap: 1rem; }
+  .refs-progress { flex-basis: 3.5rem; }
+}
+
 /* ---------- FAQ ---------- */
 
 .faq-list { border-top: 1px solid var(--line); }

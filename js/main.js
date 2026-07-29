@@ -394,6 +394,82 @@
     });
   }
 
+  /* ---------- Reference (slider) ---------- */
+  var refs = document.getElementById("refs");
+
+  if (refs) {
+    var slides = refs.querySelectorAll(".ref-slide");
+    var counter = refs.querySelector(".refs-counter");
+    var progress = refs.querySelector(".refs-progress > span");
+    var aktualni = 0;
+    var INTERVAL = 7000;
+    var casovac = null;
+    var klidovyRezim = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var ukaz = function (index) {
+      aktualni = (index + slides.length) % slides.length;
+      slides.forEach(function (s, i) {
+        s.classList.toggle("is-active", i === aktualni);
+      });
+      counter.textContent =
+        ("0" + (aktualni + 1)).slice(-2) + " / " + ("0" + slides.length).slice(-2);
+      restartujProgress();
+    };
+
+    var restartujProgress = function () {
+      if (!progress || klidovyRezim) { return; }
+      progress.style.animation = "none";
+      void progress.offsetWidth; // vynutí nové spuštění animace
+      progress.style.animation = "";
+    };
+
+    var naplanuj = function () {
+      if (klidovyRezim) { return; }
+      clearInterval(casovac);
+      refs.classList.add("is-auto");
+      casovac = setInterval(function () { ukaz(aktualni + 1); }, INTERVAL);
+    };
+
+    var rucne = function (index) {
+      ukaz(index);
+      naplanuj(); // po ručním zásahu odpočítávej znovu od začátku
+    };
+
+    refs.querySelector("[data-refs-prev]").addEventListener("click", function () { rucne(aktualni - 1); });
+    refs.querySelector("[data-refs-next]").addEventListener("click", function () { rucne(aktualni + 1); });
+
+    // šipky na klávesnici, když je slider pod rukama
+    refs.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") { rucne(aktualni - 1); }
+      if (e.key === "ArrowRight") { rucne(aktualni + 1); }
+    });
+
+    // tažení prstem / myší
+    var tahOd = null;
+    refs.querySelector(".refs-track").addEventListener("pointerdown", function (e) {
+      tahOd = e.clientX;
+    });
+    window.addEventListener("pointerup", function (e) {
+      if (tahOd === null) { return; }
+      var rozdil = e.clientX - tahOd;
+      tahOd = null;
+      if (Math.abs(rozdil) > 40) { rucne(rozdil < 0 ? aktualni + 1 : aktualni - 1); }
+    });
+
+    // pauza, když na slideru stojí myš
+    refs.addEventListener("mouseenter", function () {
+      clearInterval(casovac);
+      refs.classList.remove("is-auto");
+    });
+    refs.addEventListener("mouseleave", function () {
+      naplanuj();
+      restartujProgress();
+    });
+
+    ukaz(0);
+    naplanuj();
+  }
+
   /* ---------- Kontaktní formulář (mailto) ---------- */
   var form = document.querySelector(".form");
 

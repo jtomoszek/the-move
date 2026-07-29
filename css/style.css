@@ -580,6 +580,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 /* Video na celou šířku nad fotopásem */
 .band-video {
+  position: relative;
   margin-top: 5rem;
   background: var(--ink);
   overflow: hidden;
@@ -1040,6 +1041,54 @@ h1, h2, h3, h4, h5, h6, .h-style {
   overflow: hidden;
 }
 
+/* Tlačítko přehrání přes video — stejné jako u karet s příběhy.
+   Vkládá ho JS ke každému videu s ovládáním; po prvním spuštění zmizí
+   a dál se ovládá běžnými prvky přehrávače. */
+.play-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  width: 4.5rem;
+  height: 4.5rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(17, 17, 17, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s, opacity 0.4s, transform 0.4s;
+}
+
+.play-badge::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 11px 0 11px 18px;
+  border-color: transparent transparent transparent var(--paper);
+  margin-left: 5px;
+  transition: border-color 0.3s;
+}
+
+.play-badge:hover { background: var(--yellow); }
+.play-badge:hover::before { border-left-color: var(--ink); }
+
+.play-badge.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.85);
+}
+
+@media screen and (max-width: 479px) {
+  .play-badge { width: 3.5rem; height: 3.5rem; }
+  .play-badge::before { border-width: 9px 0 9px 14px; }
+}
+
 .video-figure video {
   width: 100%;
   height: auto;
@@ -1220,9 +1269,11 @@ h1, h2, h3, h4, h5, h6, .h-style {
   border-width: 10px 0 10px 16px;
   border-color: transparent transparent transparent var(--paper);
   margin-left: 4px;
+  transition: border-color 0.3s;
 }
 
 .story:not(.is-open):hover .story-play { background: var(--yellow); }
+.story:not(.is-open):hover .story-play::before { border-left-color: var(--ink); }
 
 .story-media video {
   position: absolute;

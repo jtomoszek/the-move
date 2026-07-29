@@ -282,6 +282,33 @@
     });
   }
 
+  /* ---------- Tlačítko přehrání u videí s ovládáním ----------
+     Videa s vlastním ovládáním ukazují systémové tlačítko prohlížeče.
+     Přidáme přes ně stejné kolečko jako u karet s příběhy — po prvním
+     spuštění zmizí a dál se video ovládá běžnými prvky přehrávače.
+     Automaticky přehrávaná videa bez ovládání (hero) se netýkají. */
+  document
+    .querySelectorAll(".video-figure video[controls], .band-video video[controls]")
+    .forEach(function (video) {
+      var obal = video.parentElement;
+      if (!obal) { return; }
+
+      var tlacitko = document.createElement("button");
+      tlacitko.type = "button";
+      tlacitko.className = "play-badge";
+      tlacitko.setAttribute("aria-label", "Přehrát video");
+      obal.appendChild(tlacitko);
+
+      tlacitko.addEventListener("click", function () {
+        video.play().catch(function () {});
+      });
+
+      // schovej po prvním spuštění, ať už jde odkud chce
+      video.addEventListener("play", function () {
+        tlacitko.classList.add("is-hidden");
+      }, { once: true });
+    });
+
   /* ---------- Příběhy (roztahovací video karty) ---------- */
   var storiesEl = document.getElementById("stories");
 

@@ -1646,15 +1646,16 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .curve-anim-rise.is-visible { animation: curve-rise 1.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .curve-anim-rise.is-visible path { stroke-dashoffset: 0; }
 
-/* f) nekonečná smyčka — linka se nakreslí, projede a kreslí se znovu */
+/* f) nekonečná smyčka tam a zpět — linka se nakreslí, chvíli drží
+      a pak se stejnou cestou zase odkreslí pozpátku. Díky `alternate`
+      se druhá polovina přehraje pozpátku, takže linka nikdy nezhasne. */
 @keyframes curve-loop {
   0%   { stroke-dashoffset: var(--curve-len, 1600); }
-  40%  { stroke-dashoffset: 0; }
-  60%  { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: calc(var(--curve-len, 1600) * -1); }
+  70%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 0; }
 }
 .curve-anim-loop.is-visible path {
-  animation: curve-loop 7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation: curve-loop 4s cubic-bezier(0.45, 0, 0.35, 1) infinite alternate;
 }
 
 /* e) kreslení + trvalé jemné plavání (CTA pásy) */

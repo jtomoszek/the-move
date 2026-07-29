@@ -1611,65 +1611,40 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .is-visible .mask-line > span,
 .mask-line.is-visible > span { transform: translateY(0); }
 
-/* Kreslení žluté křivky — každý box má vlastní variantu animace */
+/* ---------- Žluté linky: všechny putují jako had ----------
+   Linka se vykresluje odpředu („hlava"), chvíli zůstane celá a pak ji
+   stejným směrem dožene „ocas" — odteče za konec cesty a začne znovu.
+   Konstantní rychlost (linear), aby šlo o plynulý pohyb, ne o mizení.
+
+   Zápornou délku bere z --curve-len-neg, kterou nastavuje JS. Zápis
+   calc(var(--curve-len) * -1) se v keyframes NEinterpoluje a linka by
+   místo odtečení skokem zhasla.
+
+   Třídy curve-anim-* už neurčují druh animace, ale jen její tempo —
+   aby dvě sousední linky nešly v zákrytu.                              */
+
 .curve-svg path {
   stroke-dasharray: var(--curve-len, 1600);
   stroke-dashoffset: var(--curve-len, 1600);
 }
 
-/* a) klasické pomalé kreslení (hero) */
-.curve-anim-draw path {
-  transition: stroke-dashoffset 2.2s cubic-bezier(0.45, 0, 0.2, 1) 0.3s;
-}
-.curve-anim-draw.is-visible path { stroke-dashoffset: 0; }
-
-/* b) svižné kreslení (první karta) */
-.curve-anim-quick path {
-  transition: stroke-dashoffset 1s cubic-bezier(0.3, 0, 0.2, 1) 0.1s;
-}
-.curve-anim-quick.is-visible path { stroke-dashoffset: 0; }
-
-/* c) kreslení z opačného konce, se zpožděním (druhá karta) */
-.curve-anim-reverse path {
-  stroke-dashoffset: var(--curve-len-neg, -1600);
-  transition: stroke-dashoffset 2.4s cubic-bezier(0.5, 0, 0.15, 1) 0.55s;
-}
-.curve-anim-reverse.is-visible path { stroke-dashoffset: 0; }
-
-/* d) nájezd celé křivky s natočením (karta lektorky) */
-@keyframes curve-rise {
-  from { opacity: 0; transform: translateY(3rem) rotate(-5deg); }
-}
-.curve-anim-rise path {
-  transition: stroke-dashoffset 1.5s ease-out 0.45s;
-}
-.curve-anim-rise.is-visible { animation: curve-rise 1.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.curve-anim-rise.is-visible path { stroke-dashoffset: 0; }
-
-/* f) had — linka putuje pořád jedním směrem: nejdřív se rozjede „hlava"
-      a linka se vykresluje, pak ji stejnou cestou dožene „ocas" a linka
-      odteče pryč. Konstantní rychlost (linear), aby to působilo jako
-      plynulý pohyb, ne jako mizení. */
 @keyframes curve-snake {
-  0%   { stroke-dashoffset: var(--curve-len, 1600); }   /* před začátkem cesty */
-  47%  { stroke-dashoffset: 0; }                        /* celá vykreslená */
-  53%  { stroke-dashoffset: 0; }                        /* krátký nádech */
-  100% { stroke-dashoffset: var(--curve-len-neg, -1600); } /* odtekla za konec */
-}
-.curve-anim-loop.is-visible path {
-  animation: curve-snake 6.5s linear infinite;
+  0%   { stroke-dashoffset: var(--curve-len, 1600); }       /* před začátkem cesty */
+  47%  { stroke-dashoffset: 0; }                            /* celá vykreslená */
+  53%  { stroke-dashoffset: 0; }                            /* krátký nádech */
+  100% { stroke-dashoffset: var(--curve-len-neg, -1600); }  /* odtekla za konec */
 }
 
-/* e) kreslení + trvalé jemné plavání (CTA pásy) */
-@keyframes curve-float {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-1rem); }
+.curve-svg.is-visible path {
+  animation: curve-snake var(--snake-dur, 6.5s) linear var(--snake-delay, 0s) infinite;
 }
-.curve-anim-float path {
-  transition: stroke-dashoffset 2s ease 0.3s;
-}
-.curve-anim-float.is-visible path { stroke-dashoffset: 0; }
-.curve-anim-float.is-visible { animation: curve-float 6s ease-in-out 2.4s infinite alternate; }
+
+/* tempa — každá skupina jinak rychle a s jiným náběhem */
+.curve-anim-draw  { --snake-dur: 8s;   --snake-delay: 0.2s; }  /* hero fotky */
+.curve-anim-quick { --snake-dur: 5.5s; --snake-delay: 0s;   }  /* karta Návrat k lehkosti */
+.curve-anim-loop  { --snake-dur: 6.5s; --snake-delay: 0.9s; }  /* karta Artists, galerie */
+.curve-anim-rise  { --snake-dur: 7.5s; --snake-delay: 0.5s; }  /* karty lektorky */
+.curve-anim-float { --snake-dur: 9s;   --snake-delay: 1.2s; }  /* CTA pásy, promo box */
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

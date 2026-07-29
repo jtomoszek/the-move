@@ -43,6 +43,50 @@
     });
   }
 
+  /* ---------- Postupné nadpisy: písmena z bluru, jak se čte ----------
+     Každé písmeno hero nadpisu se rozdělí do vlastního spanu a při
+     odkrytí najíždí zespodu z rozostření do ostrosti, se zpožděním
+     rostoucím zleva doprava — jako by se nadpis četl. */
+  var ltrHeadings = [];
+  document.querySelectorAll(".mask-line").forEach(function (line) {
+    var h = line.parentElement;
+    if (ltrHeadings.indexOf(h) === -1) { ltrHeadings.push(h); }
+  });
+
+  ltrHeadings.forEach(function (heading) {
+    var poradi = 0;
+
+    function rozdel(uzel) {
+      Array.prototype.slice.call(uzel.childNodes).forEach(function (dite) {
+        if (dite.nodeType === Node.TEXT_NODE) {
+          var kusy = document.createDocumentFragment();
+          Array.from(dite.textContent).forEach(function (znak) {
+            if (/\s/.test(znak)) {
+              kusy.appendChild(document.createTextNode(znak));
+              return;
+            }
+            var s = document.createElement("span");
+            s.className = "ltr";
+            s.style.setProperty("--ltr-i", poradi++);
+            s.textContent = znak;
+            kusy.appendChild(s);
+          });
+          uzel.replaceChild(kusy, dite);
+        } else if (dite.nodeType === Node.ELEMENT_NODE) {
+          rozdel(dite); // zachová <em> se žlutou barvou
+        }
+      });
+    }
+
+    heading.setAttribute("aria-label", heading.textContent.replace(/\s+/g, " ").trim());
+    heading.classList.add("ltr-heading");
+    heading.querySelectorAll(".mask-line").forEach(function (line) {
+      line.setAttribute("aria-hidden", "true");
+      var vnitrni = line.firstElementChild;
+      if (vnitrni) { rozdel(vnitrni); }
+    });
+  });
+
   /* ---------- Odkrývání prvků při scrollu ---------- */
   var revealables = document.querySelectorAll(".reveal, .mask-line, .curve-svg");
 

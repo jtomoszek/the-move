@@ -1662,6 +1662,34 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .is-visible .mask-line > span,
 .mask-line.is-visible > span { transform: translateY(0); }
 
+/* Postupné nadpisy: JS rozdělí text na písmena (.ltr) a nadpis dostane
+   .ltr-heading — původní řádkové odkrývání se pak vypne a animují se
+   jednotlivá písmena: zespodu, z rozostření, se zpožděním zleva doprava. */
+.ltr-heading .mask-line { overflow: visible; }
+
+.ltr-heading .mask-line > span {
+  transform: none;
+  transition: none;
+}
+
+.ltr {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(0.22em);
+  transition:
+    opacity 0.45s ease,
+    filter 0.6s ease,
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--ltr-i, 0) * 0.03s);
+}
+
+.mask-line.is-visible .ltr {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+
 /* ---------- Žluté linky: všechny putují jako had ----------
    Linka se vykresluje odpředu („hlava"), chvíli zůstane celá a pak ji
    stejným směrem dožene „ocas" — odteče za konec cesty a začne znovu.
@@ -1700,6 +1728,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal, .mask-line > span { opacity: 1; transform: none; transition: none; }
+  .ltr { opacity: 1 !important; filter: none !important; transform: none !important; transition: none !important; }
   .curve-svg path { stroke-dashoffset: 0 !important; transition: none !important; }
   .curve-svg, .curve-svg.is-visible { animation: none !important; }
   .footer-marquee-track { animation: none; }

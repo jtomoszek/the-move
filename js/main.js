@@ -67,7 +67,12 @@
   document.querySelectorAll(".curve-svg path").forEach(function (path) {
     try {
       var len = Math.ceil(path.getTotalLength());
-      path.closest(".curve-svg").style.setProperty("--curve-len", len);
+      var svg = path.closest(".curve-svg");
+      svg.style.setProperty("--curve-len", len);
+      // zápornou délku předáváme jako hotovou hodnotu — calc(var() * -1)
+      // se v keyframes neinterpoluje a animace by místo plynulého
+      // odtečení linky jen skočila do neviditelna
+      svg.style.setProperty("--curve-len-neg", -len);
     } catch (e) { /* SVG bez rozměrů — ponech výchozí */ }
   });
 

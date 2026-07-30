@@ -326,6 +326,18 @@
     });
   }
 
+  /* ---------- Dekorativní videa a omezený pohyb ----------
+     Videa bez ovládání běží sama jako vizuální prvek. Uživatelům, kteří
+     mají v systému nastavené omezení animací, je zastavíme a necháme
+     jen statický náhled. */
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.querySelectorAll("video[autoplay]").forEach(function (video) {
+      video.autoplay = false;
+      video.removeAttribute("autoplay");
+      video.pause();
+    });
+  }
+
   /* ---------- Tlačítko přehrání u videí s ovládáním ----------
      Videa s vlastním ovládáním ukazují systémové tlačítko prohlížeče.
      Přidáme přes ně stejné kolečko jako u karet s příběhy. Po prvním

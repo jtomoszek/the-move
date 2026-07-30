@@ -1,6 +1,6 @@
 <?php
 /**
- * THE MOVE — veřejný seznam termínů (JSON).
+ * THE MOVE :: veřejný seznam termínů (JSON).
  * Vrací jen budoucí zveřejněné termíny bez osobních údajů.
  */
 

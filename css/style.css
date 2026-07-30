@@ -1,5 +1,5 @@
 /* ============================================================
-   THE MOVE — Feldenkraisova metoda
+   THE MOVE :: Feldenkraisova metoda
    Design system podle šablony Erikk (Webflow)
    Fonty: General Sans (nadpisy) + Roboto Mono (texty)
    Akcent: žlutá #F2AF0E
@@ -643,7 +643,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
   pointer-events: none;
 }
 
-/* varianta přes celou šířku karty — oba konce vybíhají do stran */
+/* varianta přes celou šířku karty: oba konce vybíhají do stran */
 .path-card .curve-svg--full {
   left: -6%;
   right: auto;
@@ -947,12 +947,13 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .refs-band {
   position: relative;
   overflow: hidden;
+  border-top: 1px solid var(--line);
 }
 
 .refs-band .curve-svg {
   position: absolute;
   right: -5%;
-  bottom: -10%;
+  bottom: -8%;
   width: 55%;
   opacity: 0.9;
   pointer-events: none;
@@ -998,7 +999,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .ref-slide figcaption {
   margin-top: 1.75rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--grey);
 }
 
 .refs-nav {
@@ -1012,10 +1013,10 @@ h1, h2, h3, h4, h5, h6, .h-style {
   width: 2.75rem;
   height: 2.75rem;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--ink);
   border-radius: 50%;
   background: transparent;
-  color: var(--paper);
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: 1rem;
   cursor: pointer;
@@ -1032,7 +1033,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--grey);
   white-space: nowrap;
 }
 
@@ -1040,7 +1041,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .refs-progress {
   flex: 0 1 6rem;
   height: 2px;
-  background: var(--line-dark);
+  background: var(--line);
   overflow: hidden;
 }
 
@@ -1166,7 +1167,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
   overflow: hidden;
 }
 
-/* Tlačítko přehrání přes video — stejné jako u karet s příběhy.
+/* Tlačítko přehrání přes video, stejné jako u karet s příběhy.
    Vkládá ho JS ke každému videu s ovládáním; po prvním spuštění zmizí
    a dál se ovládá běžnými prvky přehrávače. */
 .play-badge {
@@ -1788,7 +1789,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .mask-line.is-visible > span { transform: translateY(0); }
 
 /* Postupné nadpisy: JS rozdělí text na písmena (.ltr) a nadpis dostane
-   .ltr-heading — původní řádkové odkrývání se pak vypne a animují se
+   .ltr-heading, původní řádkové odkrývání se pak vypne a animují se
    jednotlivá písmena: zespodu, z rozostření, se zpožděním zleva doprava. */
 .ltr-heading .mask-line { overflow: visible; }
 
@@ -1817,14 +1818,14 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 /* ---------- Žluté linky: všechny putují jako had ----------
    Linka se vykresluje odpředu („hlava"), chvíli zůstane celá a pak ji
-   stejným směrem dožene „ocas" — odteče za konec cesty a začne znovu.
+   stejným směrem dožene „ocas", odteče za konec cesty a začne znovu.
    Konstantní rychlost (linear), aby šlo o plynulý pohyb, ne o mizení.
 
    Zápornou délku bere z --curve-len-neg, kterou nastavuje JS. Zápis
    calc(var(--curve-len) * -1) se v keyframes NEinterpoluje a linka by
    místo odtečení skokem zhasla.
 
-   Třídy curve-anim-* už neurčují druh animace, ale jen její tempo —
+   Třídy curve-anim-* už neurčují druh animace, ale jen její tempo,
    aby dvě sousední linky nešly v zákrytu.                              */
 
 .curve-svg path {
@@ -1843,7 +1844,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
   animation: curve-snake var(--snake-dur, 6.5s) linear var(--snake-delay, 0s) infinite;
 }
 
-/* tempa — každá skupina jinak rychle a s jiným náběhem */
+/* tempa: každá skupina jinak rychle a s jiným náběhem */
 .curve-anim-draw  { --snake-dur: 8s;   --snake-delay: 0.2s; }  /* hero fotky */
 .curve-anim-quick { --snake-dur: 5.5s; --snake-delay: 0s;   }  /* karta Návrat k lehkosti */
 .curve-anim-loop  { --snake-dur: 6.5s; --snake-delay: 0.9s; }  /* karta Artists, galerie */

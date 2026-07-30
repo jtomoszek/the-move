@@ -1,6 +1,6 @@
 <?php
 /**
- * THE MOVE — sdílené připojení k SQLite databázi.
+ * THE MOVE :: sdílené připojení k SQLite databázi.
  * Databáze se vytvoří automaticky při prvním použití.
  */
 

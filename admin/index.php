@@ -1,6 +1,6 @@
 <?php
 /**
- * THE MOVE — administrace termínů.
+ * THE MOVE :: administrace termínů.
  * Při prvním spuštění si lektorka nastaví heslo, poté spravuje
  * termíny a vidí přihlášené účastníky.
  */
@@ -223,7 +223,7 @@ $csrf = csrf_token();
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Administrace — The Move</title>
+<title>Administrace · The Move</title>
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -393,7 +393,7 @@ details[open] summary::before { content:"− "; }
   <h2 style="margin:2.5rem 0 1.25rem">Termíny</h2>
 
   <?php if (!$terminy): ?>
-    <div class="card">Zatím tu nejsou žádné termíny — přidejte první výše.</div>
+    <div class="card">Zatím tu nejsou žádné termíny, přidejte první výše.</div>
   <?php endif; ?>
 
   <?php foreach ($terminy as $t):
@@ -406,8 +406,8 @@ details[open] summary::before { content:"− "; }
   <div class="termin" id="t<?= (int) $t['id'] ?>" data-minuly="<?= $minuly ? 1 : 0 ?>">
     <div class="termin-hlava">
       <div>
-        <div class="termin-kdy"><?= e(cesky_den($t['datum'])) ?> <?= e(ceske_datum($t['datum'])) ?> · <?= e($t['cas_od']) ?>–<?= e($t['cas_do']) ?></div>
-        <div class="termin-misto"><?= e($t['misto']) ?><?= $t['poznamka'] !== '' ? ' — ' . e($t['poznamka']) : '' ?></div>
+        <div class="termin-kdy"><?= e(cesky_den($t['datum'])) ?> <?= e(ceske_datum($t['datum'])) ?> · <?= e($t['cas_od']) ?> do <?= e($t['cas_do']) ?></div>
+        <div class="termin-misto"><?= e($t['misto']) ?><?= $t['poznamka'] !== '' ? ' · ' . e($t['poznamka']) : '' ?></div>
       </div>
       <span class="badge <?= $volno === 0 ? 'badge--plno' : 'badge--volno' ?>">
         <?= $minuly ? 'Proběhlo · ' : '' ?>Obsazeno <?= $obsazeno ?> z <?= $kapacita ?>
@@ -459,14 +459,14 @@ details[open] summary::before { content:"− "; }
   </div>
   <?php endforeach; ?>
 
-  <p class="zapati">The Move — administrace termínů. Smazáním termínu se odstraní i jeho rezervace.</p>
+  <p class="zapati">The Move :: administrace termínů. Smazáním termínu se odstraní i jeho rezervace.</p>
 
 <?php endif; ?>
 
 </div>
 
 <script>
-/* Dvoukrokové potvrzení místo systémového dialogu — první klik tlačítko
+/* Dvoukrokové potvrzení místo systémového dialogu: první klik tlačítko
    „nabije" (zčervená), druhý klik akci provede. Po 5 s se samo vrátí zpět.
    Nezávisí na window.confirm, takže funguje i tam, kde jsou dialogy blokované. */
 document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
@@ -482,8 +482,8 @@ document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
   }
 
   form.addEventListener('submit', function (e) {
-    if (nabito) { return; }          // druhý klik — odešli
-    e.preventDefault();              // první klik — jen se zeptej
+    if (nabito) { return; }          // druhý klik: odešli
+    e.preventDefault();              // první klik: jen se zeptej
     nabito = true;
     btn.textContent = form.dataset.potvrdit;
     btn.classList.add('btn--potvrdit');

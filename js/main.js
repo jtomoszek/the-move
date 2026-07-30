@@ -1,4 +1,4 @@
-/* THE MOVE — interakce a animace */
+/* THE MOVE :: interakce a animace */
 
 (function () {
   "use strict";
@@ -46,7 +46,7 @@
   /* ---------- Postupné nadpisy: písmena z bluru, jak se čte ----------
      Každé písmeno hero nadpisu se rozdělí do vlastního spanu a při
      odkrytí najíždí zespodu z rozostření do ostrosti, se zpožděním
-     rostoucím zleva doprava — jako by se nadpis četl. */
+     rostoucím zleva doprava, jako by se nadpis četl. */
   var ltrHeadings = [];
   document.querySelectorAll(".mask-line").forEach(function (line) {
     var h = line.parentElement;
@@ -113,11 +113,11 @@
       var len = Math.ceil(path.getTotalLength());
       var svg = path.closest(".curve-svg");
       svg.style.setProperty("--curve-len", len);
-      // zápornou délku předáváme jako hotovou hodnotu — calc(var() * -1)
+      // zápornou délku předáváme jako hotovou hodnotu, protože calc(var() * -1)
       // se v keyframes neinterpoluje a animace by místo plynulého
       // odtečení linky jen skočila do neviditelna
       svg.style.setProperty("--curve-len-neg", -len);
-    } catch (e) { /* SVG bez rozměrů — ponech výchozí */ }
+    } catch (e) { /* SVG bez rozměrů, ponech výchozí */ }
   });
 
   /* ---------- FAQ akordeon ---------- */
@@ -147,7 +147,7 @@
   var scheduleList = document.getElementById("schedule-list");
   var modal = document.getElementById("booking-modal");
 
-  // Náhled na GitHub Pages: statický hosting bez PHP — ukázková data,
+  // Náhled na GitHub Pages: statický hosting bez PHP, ukázková data,
   // rezervace se jen simulují. Na ostrém hostingu se tato větev nepoužije.
   var IS_PREVIEW = /\.github\.io$/.test(location.hostname);
 
@@ -177,7 +177,7 @@
       }
 
       row.innerHTML =
-        '<span class="schedule-time">' + t.den + " " + t.datum + " · " + t.cas_od + " – " + t.cas_do + "</span>" +
+        '<span class="schedule-time">' + t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + "</span>" +
         '<span class="schedule-place">' + escapeHtml(t.misto) +
         (t.poznamka ? ' <small class="text-grey">' + escapeHtml(t.poznamka) + "</small>" : "") + "</span>" +
         free +
@@ -211,7 +211,7 @@
           if (IS_PREVIEW) {
             var note = document.createElement("p");
             note.className = "schedule-loading text-grey text-small";
-            note.textContent = "Náhled webu — termíny jsou ukázkové, rezervace se neukládají.";
+            note.textContent = "Náhled webu, termíny jsou ukázkové a rezervace se neukládají.";
             scheduleList.appendChild(note);
           }
         }
@@ -232,7 +232,7 @@
     document.body.style.overflow = "hidden";
 
     modal.querySelector(".modal-lesson").textContent =
-      t.den + " " + t.datum + " · " + t.cas_od + " – " + t.cas_do + " · " + t.misto;
+      t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + " · " + t.misto;
     modal.querySelector('[name="termin_id"]').value = t.id;
 
     var form = modal.querySelector(".booking-form");
@@ -290,7 +290,7 @@
         bookingForm.hidden = true;
         var previewSuccess = modal.querySelector(".booking-success");
         previewSuccess.querySelector("p").textContent =
-          "Toto je náhled webu — rezervace se zatím neukládají. Na ostrém webu by teď bylo místo rezervované.";
+          "Toto je náhled webu, rezervace se zatím neukládají. Na ostrém webu by teď bylo místo rezervované.";
         previewSuccess.hidden = false;
         return;
       }
@@ -328,7 +328,7 @@
 
   /* ---------- Tlačítko přehrání u videí s ovládáním ----------
      Videa s vlastním ovládáním ukazují systémové tlačítko prohlížeče.
-     Přidáme přes ně stejné kolečko jako u karet s příběhy — po prvním
+     Přidáme přes ně stejné kolečko jako u karet s příběhy. Po prvním
      spuštění zmizí a dál se video ovládá běžnými prvky přehrávače.
      Automaticky přehrávaná videa bez ovládání (hero) se netýkají. */
   document
@@ -438,10 +438,12 @@
     refs.querySelector("[data-refs-prev]").addEventListener("click", function () { rucne(aktualni - 1); });
     refs.querySelector("[data-refs-next]").addEventListener("click", function () { rucne(aktualni + 1); });
 
-    // šipky na klávesnici, když je slider pod rukama
-    refs.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowLeft") { rucne(aktualni - 1); }
-      if (e.key === "ArrowRight") { rucne(aktualni + 1); }
+    // šipky na klávesnici, když je slider vidět v okně
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") { return; }
+      var r = refs.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) { return; }
+      rucne(e.key === "ArrowRight" ? aktualni + 1 : aktualni - 1);
     });
 
     // tažení prstem / myší
@@ -491,7 +493,7 @@
       var body = message + "\n\n" + name + "\n" + email;
       window.location.href =
         "mailto:info@themove.cz" +
-        "?subject=" + encodeURIComponent("Poptávka z webu — The Move") +
+        "?subject=" + encodeURIComponent("Poptávka z webu :: The Move") +
         "&body=" + encodeURIComponent(body);
     });
   }

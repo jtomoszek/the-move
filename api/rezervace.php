@@ -1,6 +1,6 @@
 <?php
 /**
- * THE MOVE — vytvoření rezervace na termín (JSON POST).
+ * THE MOVE :: vytvoření rezervace na termín (JSON POST).
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ if (!is_array($data)) {
     $data = $_POST;
 }
 
-// Honeypot — pole „web" vyplňují jen roboti.
+// Honeypot: pole „web" vyplňují jen roboti.
 if (!empty($data['web'])) {
     odpoved(true, 'Děkujeme, rezervace byla přijata.');
 }
@@ -84,10 +84,10 @@ try {
     $pdo->commit();
 
     // Upozornění lektorce (na sdíleném hostingu funguje mail(); selhání nevadí).
-    $predmet = '=?UTF-8?B?' . base64_encode('Nová rezervace — The Move') . '?=';
+    $predmet = '=?UTF-8?B?' . base64_encode('Nová rezervace :: The Move') . '?=';
     $telo = "Nová rezervace lekce:\n\n"
         . cesky_den($termin['datum']) . ' ' . ceske_datum($termin['datum'])
-        . ' ' . $termin['cas_od'] . '–' . $termin['cas_do'] . "\n"
+        . ' ' . $termin['cas_od'] . ' do ' . $termin['cas_do'] . "\n"
         . $termin['misto'] . "\n\n"
         . "Jméno: {$jmeno}\nE-mail: {$email}\nTelefon: {$telefon}\n";
     @mail('info@themove.cz', $predmet, $telo,

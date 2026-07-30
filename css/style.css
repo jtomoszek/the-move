@@ -408,6 +408,14 @@ h1, h2, h3, h4, h5, h6, .h-style {
   margin-bottom: 4rem;
 }
 
+/* na úzkých displejích se štítky srovnají pod sebe, ať se nelámou */
+@media screen and (max-width: 560px) {
+  .hero-topline {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
 .hero h1 { position: relative; z-index: 2; }
 
 .hero-sub {

@@ -12,9 +12,13 @@ Options -Indexes
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # vše na HTTPS
+  # vše na HTTPS.
+  # Tři podmínky schválně: některé hostingy ukončují HTTPS na svém
+  # proxy serveru a proměnnou HTTPS pak vůbec nenastaví. Bez těch
+  # dalších dvou kontrol by web spadl do nekonečného přesměrování.
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteCond %{SERVER_PORT} !=443
   RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
   # www.themove.cz -> themove.cz

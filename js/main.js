@@ -484,6 +484,76 @@
     naplanuj();
   }
 
+  /* ---------- Prohlížeč fotek (galerie) ---------- */
+  var lightbox = document.getElementById("lightbox");
+  var galerie = document.getElementById("galerie");
+
+  if (lightbox && galerie) {
+    var polozky = Array.prototype.slice.call(galerie.querySelectorAll(".gallery-item"));
+    var lbImg = lightbox.querySelector(".lightbox-img");
+    var lbText = lightbox.querySelector(".lightbox-text");
+    var lbPocet = lightbox.querySelector(".lightbox-counter");
+    var aktualni = 0;
+    var vratitFokus = null;
+
+    function ukaz(index) {
+      aktualni = (index + polozky.length) % polozky.length; // dokola
+      var img = polozky[aktualni].querySelector("img");
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lbText.textContent = img.alt;
+      lbPocet.textContent = (aktualni + 1) + " / " + polozky.length;
+      // restart animace nájezdu
+      lbImg.style.animation = "none";
+      void lbImg.offsetWidth;
+      lbImg.style.animation = "";
+    }
+
+    function otevri(index) {
+      vratitFokus = polozky[index];
+      ukaz(index);
+      lightbox.hidden = false;
+      document.body.style.overflow = "hidden";
+      lightbox.querySelector(".lightbox-close").focus();
+    }
+
+    function zavri() {
+      lightbox.hidden = true;
+      document.body.style.overflow = "";
+      if (vratitFokus) { vratitFokus.focus(); }
+    }
+
+    polozky.forEach(function (polozka, i) {
+      polozka.addEventListener("click", function () { otevri(i); });
+    });
+
+    lightbox.querySelectorAll("[data-lb-close]").forEach(function (el) {
+      el.addEventListener("click", zavri);
+    });
+    lightbox.querySelector("[data-lb-prev]").addEventListener("click", function () { ukaz(aktualni - 1); });
+    lightbox.querySelector("[data-lb-next]").addEventListener("click", function () { ukaz(aktualni + 1); });
+
+    document.addEventListener("keydown", function (e) {
+      if (lightbox.hidden) { return; }
+      if (e.key === "Escape") { zavri(); }
+      else if (e.key === "ArrowLeft") { ukaz(aktualni - 1); }
+      else if (e.key === "ArrowRight") { ukaz(aktualni + 1); }
+    });
+
+    // listování prstem
+    var dotekX = null;
+    lightbox.addEventListener("touchstart", function (e) {
+      dotekX = e.changedTouches[0].clientX;
+    }, { passive: true });
+
+    lightbox.addEventListener("touchend", function (e) {
+      if (dotekX === null) { return; }
+      var rozdil = e.changedTouches[0].clientX - dotekX;
+      if (Math.abs(rozdil) > 50) { ukaz(aktualni + (rozdil < 0 ? 1 : -1)); }
+      dotekX = null;
+    }, { passive: true });
+  }
+
   /* ---------- Kontaktní formulář (mailto) ---------- */
   var form = document.querySelector(".form");
 

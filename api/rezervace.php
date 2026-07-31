@@ -10,7 +10,7 @@ require __DIR__ . '/../inc/db.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-function odpoved(bool $ok, string $zprava, int $kod = 200, array $extra = []): never
+function odpoved(bool $ok, string $zprava, int $kod = 200, array $extra = [])
 {
     http_response_code($kod);
     echo json_encode(['ok' => $ok, 'zprava' => $zprava] + $extra, JSON_UNESCAPED_UNICODE);

@@ -55,7 +55,7 @@ function csrf_over(): void
     }
 }
 
-function presmeruj(string $kam = ''): never
+function presmeruj(string $kam = '')
 {
     header('Location: index.php' . $kam);
     exit;

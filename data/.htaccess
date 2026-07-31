@@ -1,2 +1,11 @@
-# Databáze nesmí být dostupná z webu
-Require all denied
+# Databáze s rezervacemi nesmí být dostupná z webu.
+# Uvedeny obě varianty zápisu, aby to platilo na Apache 2.2 i 2.4.
+
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

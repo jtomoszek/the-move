@@ -3,20 +3,13 @@
 (function () {
   "use strict";
 
-  /* ---------- Navigace: pozadí + skrývání při scrollu ---------- */
+  /* ---------- Navigace ----------
+     Menu zůstává na stránce trvale. Po odscrollování od začátku
+     mu jen podložíme pozadí, aby text pod ním zůstal čitelný. */
   var nav = document.querySelector(".nav");
-  var lastY = window.scrollY;
 
   function onScroll() {
-    var y = window.scrollY;
-    nav.classList.toggle("is-scrolled", y > 40);
-    // skryj při scrollu dolů, ukaž při scrollu nahoru
-    if (y > 300 && y > lastY + 6) {
-      nav.classList.add("is-hidden");
-    } else if (y < lastY - 6) {
-      nav.classList.remove("is-hidden");
-    }
-    lastY = y;
+    nav.classList.toggle("is-scrolled", window.scrollY > 40);
   }
 
   window.addEventListener("scroll", onScroll, { passive: true });

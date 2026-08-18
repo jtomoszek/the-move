@@ -284,7 +284,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
   left: 0;
   right: 0;
   z-index: 100;
-  transition: background-color 0.3s, box-shadow 0.3s, transform 0.4s;
+  transition: background-color 0.3s, box-shadow 0.3s;
 }
 
 .nav.is-scrolled {
@@ -294,7 +294,8 @@ h1, h2, h3, h4, h5, h6, .h-style {
   box-shadow: 0 1px 0 var(--line);
 }
 
-.nav.is-hidden { transform: translateY(-100%); }
+/* Kotvy na stránce se zastaví pod trvale viditelným menu */
+[id] { scroll-margin-top: 6rem; }
 
 .nav-inner {
   display: flex;

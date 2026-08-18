@@ -1900,40 +1900,6 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .footer-bottom a:hover { color: var(--yellow); }
 
-/* Obří rolující nápis */
-.footer-marquee {
-  position: relative;
-  border-top: 1px solid var(--line-dark);
-  padding: 2rem 0 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.footer-marquee-track {
-  display: inline-flex;
-  gap: 4rem;
-  animation: marquee 28s linear infinite;
-}
-
-.footer-marquee span {
-  font-family: var(--font-head);
-  font-size: 11vw;
-  line-height: 90%;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--paper);
-}
-
-.footer-marquee span em {
-  font-style: normal;
-  color: var(--yellow);
-}
-
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
 @media screen and (max-width: 991px) {
   .footer-top { grid-template-columns: 1fr 1fr; }
 }
@@ -2044,5 +2010,4 @@ h1, h2, h3, h4, h5, h6, .h-style {
   .ltr { opacity: 1 !important; filter: none !important; transform: none !important; transition: none !important; }
   .curve-svg path { stroke-dashoffset: 0 !important; transition: none !important; }
   .curve-svg, .curve-svg.is-visible { animation: none !important; }
-  .footer-marquee-track { animation: none; }
 }

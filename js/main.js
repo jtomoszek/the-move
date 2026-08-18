@@ -107,18 +107,9 @@
     revealables.forEach(function (el) { el.classList.add("is-visible"); });
   }
 
-  /* Délka tahu pro kreslení křivek */
-  document.querySelectorAll(".curve-svg path").forEach(function (path) {
-    try {
-      var len = Math.ceil(path.getTotalLength());
-      var svg = path.closest(".curve-svg");
-      svg.style.setProperty("--curve-len", len);
-      // zápornou délku předáváme jako hotovou hodnotu, protože calc(var() * -1)
-      // se v keyframes neinterpoluje a animace by místo plynulého
-      // odtečení linky jen skočila do neviditelna
-      svg.style.setProperty("--curve-len-neg", -len);
-    } catch (e) { /* SVG bez rozměrů, ponech výchozí */ }
-  });
+  /* Délku tahu křivek už nepočítáme: cesty mají v HTML pathLength="1",
+     takže si animaci řídí samo CSS pevnými čísly. Nezávisí tedy na
+     JavaScriptu a chová se stejně ve všech prohlížečích. */
 
   /* ---------- FAQ akordeon ---------- */
   document.querySelectorAll(".faq-item").forEach(function (item) {

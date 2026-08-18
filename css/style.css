@@ -2004,23 +2004,27 @@ h1, h2, h3, h4, h5, h6, .h-style {
    stejným směrem dožene „ocas", odteče za konec cesty a začne znovu.
    Konstantní rychlost (linear), aby šlo o plynulý pohyb, ne o mizení.
 
-   Zápornou délku bere z --curve-len-neg, kterou nastavuje JS. Zápis
-   calc(var(--curve-len) * -1) se v keyframes NEinterpoluje a linka by
-   místo odtečení skokem zhasla.
+   Délku cesty řeší atribut pathLength="1" přímo v HTML, animace tedy
+   nezávisí na JavaScriptu ani na CSS proměnných.
 
    Třídy curve-anim-* už neurčují druh animace, ale jen její tempo,
    aby dvě sousední linky nešly v zákrytu.                              */
 
+/* Cesty mají v HTML atribut pathLength="1", takže se jejich délka
+   normalizuje na 1 bez ohledu na skutečnou geometrii. Keyframes tak
+   vystačí s pevnými čísly a nepotřebují CSS proměnné.
+   Safari totiž proměnné uvnitř keyframes neinterpoluje plynule,
+   hodnoty skáčou a z hada se stane blikání. */
 .curve-svg path {
-  stroke-dasharray: var(--curve-len, 1600);
-  stroke-dashoffset: var(--curve-len, 1600);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
 }
 
 @keyframes curve-snake {
-  0%   { stroke-dashoffset: var(--curve-len, 1600); }       /* před začátkem cesty */
-  47%  { stroke-dashoffset: 0; }                            /* celá vykreslená */
-  53%  { stroke-dashoffset: 0; }                            /* krátký nádech */
-  100% { stroke-dashoffset: var(--curve-len-neg, -1600); }  /* odtekla za konec */
+  0%   { stroke-dashoffset: 1; }   /* před začátkem cesty */
+  47%  { stroke-dashoffset: 0; }   /* celá vykreslená */
+  53%  { stroke-dashoffset: 0; }   /* krátký nádech */
+  100% { stroke-dashoffset: -1; }  /* odtekla za konec */
 }
 
 .curve-svg.is-visible path {

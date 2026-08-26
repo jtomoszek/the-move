@@ -15,7 +15,7 @@ require_once __DIR__ . '/mail.php';
  * @return array{ok:bool,chyba:string,kod:int,rezervace:?array,termin:?array}
  */
 function vytvor_rezervaci(PDO $pdo, int $terminId, string $jmeno, string $email,
-                          string $telefon = '', string $zdroj = 'web'): array
+                          string $telefon = '', string $zdroj = 'web', int $oznameno = 1): array
 {
     $chyba = function (string $zprava, int $kod): array {
         return ['ok' => false, 'chyba' => $zprava, 'kod' => $kod, 'rezervace' => null, 'termin' => null];
@@ -50,11 +50,11 @@ function vytvor_rezervaci(PDO $pdo, int $terminId, string $jmeno, string $email,
 
     $token = novy_token();
     $ins = $pdo->prepare(
-        'INSERT INTO rezervace (termin_id, jmeno, email, telefon, token, zdroj)
-         VALUES (:t, :j, :e, :tel, :tok, :z)'
+        'INSERT INTO rezervace (termin_id, jmeno, email, telefon, token, zdroj, oznameno)
+         VALUES (:t, :j, :e, :tel, :tok, :z, :o)'
     );
-    $ins->execute([':t' => $terminId, ':j' => $jmeno, ':e' => $email,
-                   ':tel' => $telefon, ':tok' => $token, ':z' => $zdroj]);
+    $ins->execute([':t' => $terminId, ':j' => $jmeno, ':e' => $email, ':tel' => $telefon,
+                   ':tok' => $token, ':z' => $zdroj, ':o' => $oznameno]);
     $id = (int) $pdo->lastInsertId();
     $pdo->commit();
 
@@ -125,8 +125,9 @@ function prihlas_natrvalo(PDO $pdo, string $jmeno, string $email, string $telefo
 }
 
 /**
- * Přihlásí na nově vypsanou skupinovou lekci všechny, kdo chodí pravidelně,
- * a pošle jim potvrzení. Vrací počet přidaných lidí.
+ * Přihlásí na nově vypsanou skupinovou lekci všechny, kdo chodí pravidelně.
+ * E-mail se neposílá hned — počká se, až lektorka dovypisuje ostatní termíny,
+ * a pak jde jeden souhrn (viz odesli_cekajici_souhrny). Vrací počet přidaných.
  */
 function doplnit_trvale_na_termin(PDO $pdo, int $terminId): int
 {
@@ -142,12 +143,80 @@ function doplnit_trvale_na_termin(PDO $pdo, int $terminId): int
 
     $pridano = 0;
     foreach ($pdo->query('SELECT * FROM trvale_prihlasky WHERE aktivni = 1 ORDER BY vytvoreno') as $p) {
-        $vysledek = vytvor_rezervaci($pdo, $terminId, $p['jmeno'], $p['email'], $p['telefon'], 'trvala');
+        $vysledek = vytvor_rezervaci($pdo, $terminId, $p['jmeno'], $p['email'], $p['telefon'], 'trvala', 0);
         if ($vysledek['ok']) {
             $pridano++;
-            email_potvrzeni($vysledek['rezervace'], $vysledek['termin']);
         }
     }
 
     return $pridano;
+}
+
+/**
+ * Rezervace čekající na souhrnný e-mail, seskupené po lidech.
+ * Vrací pole [email => ['jmeno' => …, 'terminy' => [...], 'posledni' => 'Y-m-d H:i:s']].
+ */
+function cekajici_souhrny(PDO $pdo): array
+{
+    $s = $pdo->query(
+        "SELECT r.id, r.jmeno, r.email, r.token, r.vytvoreno,
+                t.datum, t.cas_od, t.cas_do, t.misto, t.typ
+         FROM rezervace r JOIN terminy t ON t.id = r.termin_id
+         WHERE r.oznameno = 0 AND r.zdroj = 'trvala'
+         ORDER BY r.email COLLATE NOCASE, t.datum, t.cas_od"
+    );
+
+    $skupiny = [];
+    foreach ($s as $r) {
+        $klic = mb_strtolower($r['email'], 'UTF-8');
+        if (!isset($skupiny[$klic])) {
+            $skupiny[$klic] = ['jmeno' => $r['jmeno'], 'email' => $r['email'],
+                               'terminy' => [], 'posledni' => $r['vytvoreno']];
+        }
+        $skupiny[$klic]['terminy'][] = $r;
+        if ($r['vytvoreno'] > $skupiny[$klic]['posledni']) {
+            $skupiny[$klic]['posledni'] = $r['vytvoreno'];
+        }
+    }
+
+    return $skupiny;
+}
+
+/**
+ * Rozešle souhrny o nově přidaných termínech.
+ *
+ * Čeká se, až od posledního přidaného termínu uplyne PAUZA_SOUHRNU minut —
+ * lektorka tak může vypsat deset termínů po sobě a lidem přijde jeden e-mail.
+ * Parametrem $hned se čekání přeskočí (tlačítko v administraci).
+ */
+function odesli_cekajici_souhrny(PDO $pdo, bool $hned = false): int
+{
+    // Rychlá zkratka: většinou nic nečeká a nemá smysl skládat celý přehled.
+    if ((int) $pdo->query("SELECT COUNT(*) FROM rezervace WHERE oznameno = 0 AND zdroj = 'trvala'")->fetchColumn() === 0) {
+        return 0;
+    }
+
+    // SQLite ukládá vytvoreno v UTC, hranici tedy počítáme také v UTC.
+    $hranice = gmdate('Y-m-d H:i:s', time() - PAUZA_SOUHRNU * 60);
+    $odeslano = 0;
+
+    foreach (cekajici_souhrny($pdo) as $skupina) {
+        if (!$hned && $skupina['posledni'] > $hranice) { continue; }
+
+        // Označíme dřív, než odešleme — ať souběžné požadavky nepošlou e-mail dvakrát.
+        $idcka = array_map(function (array $r) { return (int) $r['id']; }, $skupina['terminy']);
+        $u = $pdo->prepare('UPDATE rezervace SET oznameno = 1 WHERE id IN ('
+            . implode(',', array_fill(0, count($idcka), '?')) . ') AND oznameno = 0');
+        $u->execute($idcka);
+        if ($u->rowCount() === 0) { continue; }
+
+        $p = $pdo->prepare('SELECT * FROM trvale_prihlasky WHERE email = :e COLLATE NOCASE');
+        $p->execute([':e' => $skupina['email']]);
+        $prihlaska = $p->fetch() ?: ['jmeno' => $skupina['jmeno'], 'email' => $skupina['email'], 'token' => ''];
+
+        email_nove_terminy($prihlaska, $skupina['terminy']);
+        $odeslano++;
+    }
+
+    return $odeslano;
 }

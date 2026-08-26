@@ -105,8 +105,13 @@ if ($akce === 'odhlasit' && $prihlasen) {
 }
 
 // Akce vyžadující přihlášení
-if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezervaci', 'pridat_rezervaci', 'zmenit_heslo', 'zrusit_trvalou'], true)) {
+if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezervaci', 'pridat_rezervaci', 'zmenit_heslo', 'zrusit_trvalou', 'odeslat_souhrny'], true)) {
     csrf_over();
+
+    if ($akce === 'odeslat_souhrny') {
+        $poslano = odesli_cekajici_souhrny($pdo, true);
+        presmeruj('?ok=souhrny&pocet=' . $poslano . '#pravidelni');
+    }
 
     if ($akce === 'pridat' || $akce === 'upravit') {
         $datum    = (string) ($_POST['datum'] ?? '');
@@ -218,6 +223,16 @@ if ($prihlasen) {
     $pravidelni = $pdo->query(
         'SELECT * FROM trvale_prihlasky WHERE aktivni = 1 ORDER BY jmeno COLLATE NOCASE'
     )->fetchAll();
+
+    // Souhrny o nových termínech čekají, než lektorka dovypisuje ostatní.
+    $cekajici = cekajici_souhrny($pdo);
+    $odejdeV = '';
+    foreach ($cekajici as $s) {
+        $cas = strtotime($s['posledni'] . ' UTC') + PAUZA_SOUHRNU * 60;
+        if ($odejdeV === '' || $cas < strtotime($odejdeV)) {
+            $odejdeV = date('Y-m-d H:i:s', $cas);
+        }
+    }
 }
 
 $okZpravy = [
@@ -227,6 +242,7 @@ $okZpravy = [
     'rezervace_smazana' => 'Rezervace byla odstraněna.',
     'rezervace_pridana' => 'Rezervace byla přidána.',
     'trvala_zrusena' => 'Pravidelná docházka byla vypnuta.',
+    'souhrny' => 'Souhrny byly rozeslány.',
 ];
 if (isset($_GET['ok'], $okZpravy[$_GET['ok']])) {
     $zprava = $okZpravy[$_GET['ok']];
@@ -235,7 +251,11 @@ if (isset($_GET['trvale']) && (int) $_GET['trvale'] > 0) {
     $pocet = (int) $_GET['trvale'];
     $zprava .= ' Automaticky jsme přihlásili ' . $pocet
         . ($pocet === 1 ? ' pravidelného účastníka' : ($pocet < 5 ? ' pravidelné účastníky' : ' pravidelných účastníků'))
-        . ' a poslali jim potvrzení.';
+        . '; souhrn jim odejde, až dovypisujete zbylé termíny.';
+}
+if (isset($_GET['pocet'])) {
+    $zprava = 'Odeslali jsme ' . (int) $_GET['pocet']
+        . ((int) $_GET['pocet'] === 1 ? ' souhrn.' : ((int) $_GET['pocet'] < 5 ? ' souhrny.' : ' souhrnů.'));
 }
 
 $csrf = csrf_token();
@@ -435,7 +455,22 @@ details[open] summary::before { content:"− "; }
         ho systém přihlásí sám.</p>
     <?php else: ?>
       <p class="text-grey" style="margin:0 0 1.25rem">Tito lidé se automaticky přihlašují na každou
-        nově vypsanou skupinovou lekci a dostanou potvrzení e-mailem.</p>
+        nově vypsanou skupinovou lekci. Souhrn s novými termíny jim odejde
+        <?= (int) PAUZA_SOUHRNU ?> minut po posledním vypsaném termínu, aby dostali jeden e-mail
+        místo deseti.</p>
+
+      <?php if ($cekajici): ?>
+        <div class="hlaska" style="margin-bottom:1.25rem">
+          Čeká na rozeslání: <strong><?= count($cekajici) ?></strong>
+          <?= count($cekajici) === 1 ? 'souhrn' : (count($cekajici) < 5 ? 'souhrny' : 'souhrnů') ?>
+          <?php if ($odejdeV !== ''): ?>· odejde v <?= e(date('H:i', strtotime($odejdeV))) ?><?php endif; ?>
+          <form method="post" style="display:inline;margin-left:.75rem">
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="akce" value="odeslat_souhrny">
+            <button class="btn btn--mini" type="submit">Odeslat hned</button>
+          </form>
+        </div>
+      <?php endif; ?>
       <?php foreach ($pravidelni as $p): ?>
         <div class="termin-hlava" style="padding:1rem 0;border-top:1px solid var(--line)">
           <div>

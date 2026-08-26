@@ -6,6 +6,10 @@
 
 declare(strict_types=1);
 
+// Ať se datumy a časy počítají v českém čase bez ohledu na nastavení hostingu.
+// SQLite ukládá vytvoreno v UTC, tam se proto pracuje s gmdate().
+date_default_timezone_set('Europe/Prague');
+
 function db(): PDO
 {
     static $pdo = null;
@@ -48,6 +52,7 @@ function db(): PDO
             poznamka  TEXT    NOT NULL DEFAULT '',
             token     TEXT    NOT NULL DEFAULT '',
             zdroj     TEXT    NOT NULL DEFAULT 'web',
+            oznameno  INTEGER NOT NULL DEFAULT 1,
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
 
@@ -69,6 +74,8 @@ function db(): PDO
         doplnit_sloupec($pdo, 'terminy', 'adresa', "TEXT NOT NULL DEFAULT ''");
         doplnit_sloupec($pdo, 'rezervace', 'token', "TEXT NOT NULL DEFAULT ''");
         doplnit_sloupec($pdo, 'rezervace', 'zdroj', "TEXT NOT NULL DEFAULT 'web'");
+        // 0 = čeká na souhrnný e-mail o nových termínech
+        doplnit_sloupec($pdo, 'rezervace', 'oznameno', 'INTEGER NOT NULL DEFAULT 1');
 
         // Rezervace založené před zavedením e-mailů token nemají; bez něj by
         // odkaz na zrušení v případném pozdějším e-mailu nefungoval.

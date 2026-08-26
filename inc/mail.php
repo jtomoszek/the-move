@@ -17,6 +17,12 @@ const MAIL_TELEFON = '+420 604 819 067';
 const MAIL_LEKTORKA = 'Lenka Schwarzová';
 const MAIL_FIRMA = 'The Move s.r.o., Nad Ostravicí 1394/6a, Slezská Ostrava, 710 00 Ostrava';
 
+/**
+ * Kolik minut se čeká, než se pravidelným účastníkům rozešle souhrn o nových
+ * termínech. Lektorka může vypsat termíny postupně a lidem přijde jeden e-mail.
+ */
+const PAUZA_SOUHRNU = 60;
+
 /** Ponechá, nebo odstraní blok ohraničený <!--{{#nazev}}--> … <!--{{/nazev}}-->. */
 function sablona_blok(string $html, string $nazev, bool $ponechat): string
 {
@@ -262,6 +268,69 @@ function email_pravidelne(array $prihlaska, array $terminy, int $plne = 0): bool
 
     return posli_mail($prihlaska['email'], $prihlaska['jmeno'],
         'Chodíte pravidelně — potvrzení přihlášky', $html, $text);
+}
+
+/**
+ * Souhrn nově vypsaných termínů pro pravidelného účastníka.
+ * U každého termínu je odkaz, kterým se z něj dá odhlásit.
+ */
+function email_nove_terminy(array $prihlaska, array $rezervace): bool
+{
+    $radky = '';
+    $seznamText = '';
+    foreach ($rezervace as $r) {
+        $zrusit = odkaz_rezervace($r['token'], 'zrusit');
+        $radky .= '<tr>'
+            . '<td width="180" valign="top" style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;mso-line-height-rule:exactly;color:#999999;">'
+            . htmlspecialchars(datum_slovy($r['datum']), ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<td valign="top" style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:22px;mso-line-height-rule:exactly;color:#111111;">'
+            . htmlspecialchars($r['cas_od'] . ' do ' . $r['cas_do'] . ' · ' . $r['misto'], ENT_QUOTES, 'UTF-8')
+            . '<br><a href="' . htmlspecialchars($zrusit, ENT_QUOTES, 'UTF-8')
+            . '" style="font-size:13px;color:#999999;text-decoration:underline;">Nemůžu tento termín</a>'
+            . '</td></tr>';
+        $seznamText .= '- ' . termin_textem($r) . "\n  Odhlásit: " . $zrusit . "\n";
+    }
+
+    $pocet = count($rezervace);
+    $nadpis = $pocet === 1 ? 'Máte nový termín.' : 'Máte nové termíny.';
+    $perex = $pocet === 1
+        ? 'Vypsali jsme novou skupinovou lekci a rezervovali vám na ní místo. Kdyby se vám nehodila, stačí se odhlásit.'
+        : 'Vypsali jsme ' . $pocet . ' nové skupinové lekce a rezervovali vám na nich místo. Kdyby se vám některá nehodila, stačí se z ní odhlásit.';
+    if ($pocet >= 5) {
+        $perex = 'Vypsali jsme ' . $pocet . ' nových skupinových lekcí a rezervovali vám na nich místo.'
+            . ' Kdyby se vám některá nehodila, stačí se z ní odhlásit.';
+    }
+
+    $zruseni = 'Nechcete už chodit pravidelně? <a href="' . htmlspecialchars(odkaz_trvale((string) $prihlaska['token']), ENT_QUOTES, 'UTF-8')
+        . '" style="color:#111111;text-decoration:underline;">Zrušte pravidelnou docházku</a> a nové termíny vám přidávat nebudeme.';
+
+    $html = sablona_zprava(mail_zaklad() + [
+        'titulek'           => 'Nové termíny · The Move',
+        'preheader'         => $pocet === 1 ? 'Přidali jsme vám nový termín.' : 'Přidali jsme vám ' . $pocet . ' nových termínů.',
+        'stitek'            => 'Pravidelné lekce',
+        'nadpis'            => $nadpis,
+        'perex'             => $perex,
+        'nazev_seznamu'     => 'Nové termíny',
+        'html_seznam_radky' => $radky,
+        'tlacitko_url'      => zakladni_url() . '/index.html#terminy',
+        'tlacitko_text'     => 'Zobrazit všechny termíny',
+        'html_zruseni'      => $zruseni,
+    ], [
+        'detail'     => false,
+        'seznam'     => true,
+        'pravidelne' => false,
+    ]);
+
+    $text = $nadpis . "\n\n" . $perex . "\n\n"
+        . "Nové termíny:\n" . $seznamText . "\n"
+        . 'Všechny termíny: ' . zakladni_url() . "/index.html#terminy\n"
+        . 'Zrušit pravidelnou docházku: ' . odkaz_trvale((string) $prihlaska['token']) . "\n\n"
+        . "Více pohybu. Více radosti. Více života.\n\n"
+        . 'Dotazy: ' . MAIL_ODESILATEL . ' · ' . MAIL_TELEFON . "\n"
+        . MAIL_FIRMA . "\n";
+
+    return posli_mail((string) $prihlaska['email'], (string) $prihlaska['jmeno'],
+        $pocet === 1 ? 'Nový termín pravidelné lekce' : 'Nové termíny pravidelných lekcí', $html, $text);
 }
 
 /** „1 lekci", „3 lekce", „5 lekcí". */

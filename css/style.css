@@ -486,6 +486,60 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .schedule { border-top: 1px solid var(--line); }
 
+/* Filtr podle druhu akce */
+.schedule-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.schedule-filter {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 500px;
+  padding: 0.55rem 1.15rem;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.schedule-filter:hover { border-color: var(--ink); }
+
+.schedule-filter.is-active {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--ink);
+}
+
+/* Štítek druhu akce v řádku termínu */
+.schedule-type {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--ink);
+  border-radius: 500px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 160%;
+}
+
+.schedule-type--workshop {
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.schedule-type--seminar {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
 .schedule-row {
   display: grid;
   grid-template-columns: 1.2fr 1.6fr 1fr auto;
@@ -513,7 +567,14 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .schedule-row:hover { padding-left: 3rem; }
 .schedule-row:hover::before { transform: translateY(-50%) scaleX(1); }
 
-.schedule-time { font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; }
+.schedule-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
 
 .schedule-place {
   font-family: var(--font-head);
@@ -544,7 +605,13 @@ h1, h2, h3, h4, h5, h6, .h-style {
   text-transform: none;
 }
 
-.schedule-more { margin-top: 3rem; display: flex; justify-content: center; }
+.schedule-more {
+  margin-top: 3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
 
 @media screen and (max-width: 767px) {
   .schedule-row {

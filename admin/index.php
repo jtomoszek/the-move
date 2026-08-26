@@ -113,6 +113,7 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         $casOd    = (string) ($_POST['cas_od'] ?? '');
         $casDo    = (string) ($_POST['cas_do'] ?? '');
         $misto    = trim((string) ($_POST['misto'] ?? ''));
+        $typ      = overeny_typ($_POST['typ'] ?? null);
         $kapacita = max(1, min(100, (int) ($_POST['kapacita'] ?? 8)));
         $poznamka = trim((string) ($_POST['poznamka'] ?? ''));
         $zverejnit = isset($_POST['zverejnit']) ? 1 : 0;
@@ -123,16 +124,16 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         if (!$okDatum || !$okCas || $misto === '') {
             $chyba = 'Vyplňte prosím datum, časy a místo konání.';
         } elseif ($akce === 'pridat') {
-            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, kapacita, poznamka, zverejnit)
-                                VALUES (:d, :od, :do, :m, :k, :p, :z)');
+            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, typ, kapacita, poznamka, zverejnit)
+                                VALUES (:d, :od, :do, :m, :typ, :k, :p, :z)');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto,
-                         ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit]);
+                         ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit]);
             presmeruj('?ok=pridano');
         } else {
             $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m,
-                                kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
+                                typ=:typ, kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto,
-                         ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
+                         ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
                          ':id' => (int) ($_POST['id'] ?? 0)]);
             presmeruj('?ok=upraveno');
         }
@@ -239,10 +240,10 @@ a { color:inherit; }
 .card h2 { margin-bottom:1.5rem; padding-top:.75rem; position:relative; }
 .card h2::before { content:""; position:absolute; top:0; left:0; width:2.25rem; height:2px; background:var(--yellow); }
 label { display:block; font-size:12px; letter-spacing:.5px; text-transform:uppercase; margin-bottom:.35rem; }
-input[type=text],input[type=password],input[type=email],input[type=date],input[type=time],input[type=number] {
+input[type=text],input[type=password],input[type=email],input[type=date],input[type=time],input[type=number],select {
   width:100%; font-family:inherit; font-size:.9375rem; padding:.6rem .75rem;
   border:1px solid var(--line); background:var(--paper); border-radius:0; }
-input:focus { outline:none; border-color:var(--yellow); }
+input:focus,select:focus { outline:none; border-color:var(--yellow); }
 .grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); margin-bottom:1.25rem; }
 .pole { min-width:0; }
 .btn { display:inline-flex; align-items:center; gap:.5rem; font-family:"Roboto Mono",monospace; font-size:13px;
@@ -265,6 +266,7 @@ input:focus { outline:none; border-color:var(--yellow); }
 .badge--volno { border-color:var(--yellow); }
 .badge--plno { background:var(--ink); color:var(--paper); border-color:var(--ink); }
 .badge--skryty { border-style:dashed; color:var(--grey); }
+.badge--typ { background:var(--yellow); border-color:var(--yellow); color:var(--ink); }
 .termin-akce { margin-left:auto; display:flex; gap:.5rem; flex-wrap:wrap; }
 details { border-top:1px solid var(--line); }
 summary { cursor:pointer; padding:.85rem 1.5rem; font-size:12px; letter-spacing:.5px; text-transform:uppercase; color:var(--grey); list-style:none; }
@@ -374,9 +376,19 @@ details[open] summary::before { content:"− "; }
           <input type="number" name="kapacita" min="1" max="100" required value="<?= e((string) ($editTermin['kapacita'] ?? 8)) ?>"></div>
       </div>
       <div class="grid">
+        <div class="pole" style="grid-column:span 2"><label>Druh události</label>
+          <select name="typ" required>
+            <?php $vybrany = overeny_typ($editTermin['typ'] ?? null); ?>
+            <?php foreach (typy_udalosti() as $klic => $nazev): ?>
+              <option value="<?= e($klic) ?>" <?= $vybrany === $klic ? 'selected' : '' ?>><?= e($nazev) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
         <div class="pole" style="grid-column:span 2"><label>Místo konání</label>
           <input type="text" name="misto" required value="<?= e($editTermin['misto'] ?? 'Ostrava-Poruba · Poklad') ?>"></div>
-        <div class="pole" style="grid-column:span 2"><label>Poznámka (nepovinné)</label>
+      </div>
+      <div class="grid">
+        <div class="pole" style="grid-column:span 4"><label>Poznámka (nepovinné)</label>
           <input type="text" name="poznamka" value="<?= e($editTermin['poznamka'] ?? '') ?>"></div>
       </div>
       <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
@@ -409,6 +421,7 @@ details[open] summary::before { content:"− "; }
         <div class="termin-kdy"><?= e(cesky_den($t['datum'])) ?> <?= e(ceske_datum($t['datum'])) ?> · <?= e($t['cas_od']) ?> do <?= e($t['cas_do']) ?></div>
         <div class="termin-misto"><?= e($t['misto']) ?><?= $t['poznamka'] !== '' ? ' · ' . e($t['poznamka']) : '' ?></div>
       </div>
+      <span class="badge badge--typ"><?= e(nazev_typu($t['typ'] ?? null)) ?></span>
       <span class="badge <?= $volno === 0 ? 'badge--plno' : 'badge--volno' ?>">
         <?= $minuly ? 'Proběhlo · ' : '' ?>Obsazeno <?= $obsazeno ?> z <?= $kapacita ?>
       </span>

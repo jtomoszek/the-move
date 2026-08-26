@@ -32,11 +32,22 @@ function db(): PDO
             cas_od    TEXT    NOT NULL,              -- HH:MM
             cas_do    TEXT    NOT NULL,              -- HH:MM
             misto     TEXT    NOT NULL,
+            typ       TEXT    NOT NULL DEFAULT 'lekce',
             kapacita  INTEGER NOT NULL DEFAULT 8,
             poznamka  TEXT    NOT NULL DEFAULT '',
             zverejnit INTEGER NOT NULL DEFAULT 1,
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
+
+        // Databáze vzniklé před zavedením typů sloupec nemají, doplníme ho.
+        // Stávající termíny zůstanou jako skupinové lekce.
+        $maTyp = false;
+        foreach ($pdo->query("PRAGMA table_info(terminy)") as $sloupec) {
+            if ($sloupec['name'] === 'typ') { $maTyp = true; break; }
+        }
+        if (!$maTyp) {
+            $pdo->exec("ALTER TABLE terminy ADD COLUMN typ TEXT NOT NULL DEFAULT 'lekce'");
+        }
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS rezervace (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +61,32 @@ function db(): PDO
     }
 
     return $pdo;
+}
+
+/**
+ * Druhy událostí. Klíč se ukládá do databáze, hodnota se zobrazuje.
+ * Pořadí určuje i pořadí filtrů na webu.
+ */
+function typy_udalosti(): array
+{
+    return [
+        'lekce'    => 'Skupinová lekce',
+        'workshop' => 'Workshop',
+        'seminar'  => 'Seminář',
+    ];
+}
+
+/** Název druhu události; u neznámé hodnoty se vrátí skupinová lekce. */
+function nazev_typu(?string $typ): string
+{
+    $typy = typy_udalosti();
+    return $typy[(string) $typ] ?? $typy['lekce'];
+}
+
+/** Ověří, že druh události existuje, jinak vrátí výchozí. */
+function overeny_typ(?string $typ): string
+{
+    return isset(typy_udalosti()[(string) $typ]) ? (string) $typ : 'lekce';
 }
 
 /** Český název dne v týdnu pro datum YYYY-MM-DD. */

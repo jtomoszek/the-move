@@ -129,23 +129,90 @@
 
   /* ---------- Termíny lekcí (načítání z API) ---------- */
   var scheduleList = document.getElementById("schedule-list");
+  var scheduleFilters = document.getElementById("schedule-filters");
+  var scheduleMoreBtn = document.getElementById("schedule-vice");
   var modal = document.getElementById("booking-modal");
 
   // Náhled na GitHub Pages: statický hosting bez PHP, ukázková data,
   // rezervace se jen simulují. Na ostrém hostingu se tato větev nepoužije.
   var IS_PREVIEW = /\.github\.io$/.test(location.hostname);
 
-  function renderSchedule(terminy) {
-    scheduleList.innerHTML = "";
+  // Na stránce se vypisuje po pěti termínech, zbytek na tlačítko „Další termíny".
+  var KROK_TERMINU = 5;
+  var vsechnyTerminy = [];
+  var aktivniFiltr = "vse";
+  var zobrazeno = KROK_TERMINU;
 
-    if (!terminy.length) {
-      scheduleList.innerHTML =
-        '<p class="schedule-loading text-grey">Momentálně nevypisujeme žádné termíny. ' +
-        'Napište nám a dáme vám vědět o nejbližší lekci.</p>';
+  function filtrovaneTerminy() {
+    if (aktivniFiltr === "vse") { return vsechnyTerminy; }
+    return vsechnyTerminy.filter(function (t) { return t.typ === aktivniFiltr; });
+  }
+
+  function vykresliFiltry() {
+    if (!scheduleFilters) { return; }
+
+    // Nabízíme jen druhy akcí, které opravdu v termínech jsou.
+    var poradi = ["lekce", "workshop", "seminar"];
+    var nazvy = {};
+    vsechnyTerminy.forEach(function (t) {
+      if (t.typ && !nazvy[t.typ]) { nazvy[t.typ] = t.typ_nazev || t.typ; }
+    });
+    var pritomne = poradi.filter(function (k) { return nazvy[k]; });
+    Object.keys(nazvy).forEach(function (k) {
+      if (poradi.indexOf(k) === -1) { pritomne.push(k); }
+    });
+
+    if (pritomne.length < 2) {
+      scheduleFilters.hidden = true;
+      scheduleFilters.innerHTML = "";
       return;
     }
 
-    terminy.forEach(function (t) {
+    scheduleFilters.hidden = false;
+    scheduleFilters.innerHTML = "";
+
+    [{ klic: "vse", nazev: "Vše" }].concat(
+      pritomne.map(function (k) { return { klic: k, nazev: nazvy[k] }; })
+    ).forEach(function (f) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "schedule-filter";
+      b.dataset.filtr = f.klic;
+      b.textContent = f.nazev;
+      b.setAttribute("aria-pressed", f.klic === aktivniFiltr ? "true" : "false");
+      if (f.klic === aktivniFiltr) { b.classList.add("is-active"); }
+      b.addEventListener("click", function () {
+        aktivniFiltr = f.klic;
+        zobrazeno = KROK_TERMINU;
+        vykresliFiltry();
+        renderSchedule();
+      });
+      scheduleFilters.appendChild(b);
+    });
+  }
+
+  function renderSchedule(terminy, zachovatVypis) {
+    if (terminy) {
+      vsechnyTerminy = terminy;
+      if (!zachovatVypis) { zobrazeno = KROK_TERMINU; }
+      if (aktivniFiltr !== "vse" && !filtrovaneTerminy().length) { aktivniFiltr = "vse"; }
+      vykresliFiltry();
+    }
+
+    var vybrane = filtrovaneTerminy();
+    scheduleList.innerHTML = "";
+
+    if (!vybrane.length) {
+      scheduleList.innerHTML = vsechnyTerminy.length
+        ? '<p class="schedule-loading text-grey">V této kategorii teď žádný termín nevypisujeme. ' +
+          'Zkuste jinou kategorii nebo nám napište.</p>'
+        : '<p class="schedule-loading text-grey">Momentálně nevypisujeme žádné termíny. ' +
+          'Napište nám a dáme vám vědět o nejbližší lekci.</p>';
+      if (scheduleMoreBtn) { scheduleMoreBtn.hidden = true; }
+      return;
+    }
+
+    vybrane.slice(0, zobrazeno).forEach(function (t) {
       var row = document.createElement("div");
       row.className = "schedule-row";
 
@@ -161,7 +228,10 @@
       }
 
       row.innerHTML =
-        '<span class="schedule-time">' + t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + "</span>" +
+        '<span class="schedule-time">' +
+        '<span class="schedule-type schedule-type--' + escapeHtml(t.typ || "lekce") + '">' +
+        escapeHtml(t.typ_nazev || "Skupinová lekce") + "</span>" +
+        t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + "</span>" +
         '<span class="schedule-place">' + escapeHtml(t.misto) +
         (t.poznamka ? ' <small class="text-grey">' + escapeHtml(t.poznamka) + "</small>" : "") + "</span>" +
         free +
@@ -176,6 +246,26 @@
       }
 
       scheduleList.appendChild(row);
+    });
+
+    if (scheduleMoreBtn) {
+      var zbyva = vybrane.length - zobrazeno;
+      scheduleMoreBtn.hidden = zbyva <= 0;
+      scheduleMoreBtn.textContent = zbyva > 0
+        ? "Další termíny (" + zbyva + ")"
+        : "Další termíny";
+    }
+  }
+
+  if (scheduleMoreBtn) {
+    scheduleMoreBtn.addEventListener("click", function () {
+      zobrazeno += KROK_TERMINU;
+      renderSchedule();
+      // Ať uživatel vidí, že přibyly další řádky.
+      var nove = scheduleList.children[zobrazeno - KROK_TERMINU];
+      if (nove && nove.scrollIntoView) {
+        nove.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
     });
   }
 
@@ -295,7 +385,7 @@
             // obnov počty volných míst
             fetch(scheduleList.dataset.api, { cache: "no-store" })
               .then(function (r) { return r.json(); })
-              .then(function (d) { if (d && d.ok) { renderSchedule(d.terminy); } })
+              .then(function (d) { if (d && d.ok) { renderSchedule(d.terminy, true); } })
               .catch(function () {});
           } else {
             errorBox.textContent = (data && data.zprava) || "Rezervaci se nepodařilo odeslat.";

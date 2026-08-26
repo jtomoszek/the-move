@@ -13,12 +13,12 @@ header('Cache-Control: no-store');
 
 try {
     $stmt = db()->prepare(
-        "SELECT t.id, t.datum, t.cas_od, t.cas_do, t.misto, t.kapacita, t.poznamka,
+        "SELECT t.id, t.datum, t.cas_od, t.cas_do, t.misto, t.typ, t.kapacita, t.poznamka,
                 (SELECT COUNT(*) FROM rezervace r WHERE r.termin_id = t.id) AS obsazeno
          FROM terminy t
          WHERE t.zverejnit = 1 AND t.datum >= :dnes
          ORDER BY t.datum, t.cas_od
-         LIMIT 30"
+         LIMIT 100"
     );
     $stmt->execute([':dnes' => date('Y-m-d')]);
 
@@ -31,6 +31,8 @@ try {
             'cas_od'   => $row['cas_od'],
             'cas_do'   => $row['cas_do'],
             'misto'    => $row['misto'],
+            'typ'      => overeny_typ($row['typ'] ?? null),
+            'typ_nazev' => nazev_typu($row['typ'] ?? null),
             'poznamka' => $row['poznamka'],
             'kapacita' => (int) $row['kapacita'],
             'volno'    => max(0, (int) $row['kapacita'] - (int) $row['obsazeno']),

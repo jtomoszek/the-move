@@ -90,11 +90,15 @@
           </p>
         </div>
 
+        <div class="schedule-filters reveal" id="schedule-filters" hidden
+             role="group" aria-label="Filtr podle druhu akce"></div>
+
         <div class="schedule reveal" id="schedule-list" data-api="api/terminy.php">
           <p class="schedule-loading text-grey">Načítáme aktuální termíny…</p>
         </div>
 
         <div class="schedule-more reveal">
+          <button type="button" class="button" id="schedule-vice" hidden>Další termíny</button>
           <a href="#kontakt" class="button button--solid">Nenašli jste svůj termín? Napište nám</a>
         </div>
       </div>

@@ -494,6 +494,10 @@ h1, h2, h3, h4, h5, h6, .h-style {
   margin-bottom: 2.5rem;
 }
 
+/* Vlastní display by jinak přebil atribut hidden. */
+.schedule-filters[hidden],
+.schedule-more .button[hidden] { display: none; }
+
 .schedule-filter {
   font-family: var(--font-mono);
   font-size: 12px;

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../inc/db.php';
+require __DIR__ . '/../inc/rezervace.php';
 
 session_set_cookie_params([
     'httponly' => true,
@@ -105,7 +105,7 @@ if ($akce === 'odhlasit' && $prihlasen) {
 }
 
 // Akce vyžadující přihlášení
-if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezervaci', 'pridat_rezervaci', 'zmenit_heslo'], true)) {
+if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezervaci', 'pridat_rezervaci', 'zmenit_heslo', 'zrusit_trvalou'], true)) {
     csrf_over();
 
     if ($akce === 'pridat' || $akce === 'upravit') {
@@ -113,6 +113,7 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         $casOd    = (string) ($_POST['cas_od'] ?? '');
         $casDo    = (string) ($_POST['cas_do'] ?? '');
         $misto    = trim((string) ($_POST['misto'] ?? ''));
+        $adresa   = trim((string) ($_POST['adresa'] ?? ''));
         $typ      = overeny_typ($_POST['typ'] ?? null);
         $kapacita = max(1, min(100, (int) ($_POST['kapacita'] ?? 8)));
         $poznamka = trim((string) ($_POST['poznamka'] ?? ''));
@@ -124,19 +125,28 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         if (!$okDatum || !$okCas || $misto === '') {
             $chyba = 'Vyplňte prosím datum, časy a místo konání.';
         } elseif ($akce === 'pridat') {
-            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, typ, kapacita, poznamka, zverejnit)
-                                VALUES (:d, :od, :do, :m, :typ, :k, :p, :z)');
-            $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto,
+            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, kapacita, poznamka, zverejnit)
+                                VALUES (:d, :od, :do, :m, :a, :typ, :k, :p, :z)');
+            $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
                          ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit]);
-            presmeruj('?ok=pridano');
+
+            // Na novou skupinovou lekci rovnou přihlásíme ty, kdo chodí pravidelně.
+            $pridano = doplnit_trvale_na_termin($pdo, (int) $pdo->lastInsertId());
+            presmeruj('?ok=pridano' . ($pridano > 0 ? '&trvale=' . $pridano : ''));
         } else {
-            $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m,
+            $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m, adresa=:a,
                                 typ=:typ, kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
-            $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto,
+            $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
                          ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
                          ':id' => (int) ($_POST['id'] ?? 0)]);
             presmeruj('?ok=upraveno');
         }
+    }
+
+    if ($akce === 'zrusit_trvalou') {
+        $s = $pdo->prepare('UPDATE trvale_prihlasky SET aktivni = 0 WHERE id = :id');
+        $s->execute([':id' => (int) ($_POST['id'] ?? 0)]);
+        presmeruj('?ok=trvala_zrusena#pravidelni');
     }
 
     if ($akce === 'smazat') {
@@ -157,9 +167,10 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         $telefon = trim((string) ($_POST['telefon'] ?? ''));
         $terminId = (int) ($_POST['termin_id'] ?? 0);
         if ($jmeno !== '' && $terminId > 0) {
-            $s = $pdo->prepare('INSERT INTO rezervace (termin_id, jmeno, email, telefon)
-                                VALUES (:t, :j, :e, :tel)');
-            $s->execute([':t' => $terminId, ':j' => $jmeno, ':e' => $email, ':tel' => $telefon]);
+            $s = $pdo->prepare('INSERT INTO rezervace (termin_id, jmeno, email, telefon, token, zdroj)
+                                VALUES (:t, :j, :e, :tel, :tok, \'rucne\')');
+            $s->execute([':t' => $terminId, ':j' => $jmeno, ':e' => $email,
+                         ':tel' => $telefon, ':tok' => novy_token()]);
         }
         presmeruj('?ok=rezervace_pridana#t' . $terminId);
     }
@@ -203,6 +214,10 @@ if ($prihlasen) {
     foreach ($vsechny as $r) {
         $rezervaceMap[(int) $r['termin_id']][] = $r;
     }
+
+    $pravidelni = $pdo->query(
+        'SELECT * FROM trvale_prihlasky WHERE aktivni = 1 ORDER BY jmeno COLLATE NOCASE'
+    )->fetchAll();
 }
 
 $okZpravy = [
@@ -211,9 +226,16 @@ $okZpravy = [
     'smazano' => 'Termín byl smazán včetně rezervací.',
     'rezervace_smazana' => 'Rezervace byla odstraněna.',
     'rezervace_pridana' => 'Rezervace byla přidána.',
+    'trvala_zrusena' => 'Pravidelná docházka byla vypnuta.',
 ];
 if (isset($_GET['ok'], $okZpravy[$_GET['ok']])) {
     $zprava = $okZpravy[$_GET['ok']];
+}
+if (isset($_GET['trvale']) && (int) $_GET['trvale'] > 0) {
+    $pocet = (int) $_GET['trvale'];
+    $zprava .= ' Automaticky jsme přihlásili ' . $pocet
+        . ($pocet === 1 ? ' pravidelného účastníka' : ($pocet < 5 ? ' pravidelné účastníky' : ' pravidelných účastníků'))
+        . ' a poslali jim potvrzení.';
 }
 
 $csrf = csrf_token();
@@ -267,6 +289,7 @@ input:focus,select:focus { outline:none; border-color:var(--yellow); }
 .badge--plno { background:var(--ink); color:var(--paper); border-color:var(--ink); }
 .badge--skryty { border-style:dashed; color:var(--grey); }
 .badge--typ { background:var(--yellow); border-color:var(--yellow); color:var(--ink); }
+.text-grey { color:var(--grey); font-size:.875rem; line-height:170%; }
 .termin-akce { margin-left:auto; display:flex; gap:.5rem; flex-wrap:wrap; }
 details { border-top:1px solid var(--line); }
 summary { cursor:pointer; padding:.85rem 1.5rem; font-size:12px; letter-spacing:.5px; text-transform:uppercase; color:var(--grey); list-style:none; }
@@ -388,7 +411,9 @@ details[open] summary::before { content:"− "; }
           <input type="text" name="misto" required value="<?= e($editTermin['misto'] ?? 'Ostrava-Poruba · Poklad') ?>"></div>
       </div>
       <div class="grid">
-        <div class="pole" style="grid-column:span 4"><label>Poznámka (nepovinné)</label>
+        <div class="pole" style="grid-column:span 2"><label>Adresa (nepovinné, jde do e-mailu)</label>
+          <input type="text" name="adresa" value="<?= e($editTermin['adresa'] ?? '') ?>"></div>
+        <div class="pole" style="grid-column:span 2"><label>Poznámka (nepovinné)</label>
           <input type="text" name="poznamka" value="<?= e($editTermin['poznamka'] ?? '') ?>"></div>
       </div>
       <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
@@ -400,6 +425,34 @@ details[open] summary::before { content:"− "; }
         <?php if ($editTermin): ?><a class="btn btn--ghost" href="index.php">Zrušit</a><?php endif; ?>
       </div>
     </form>
+  </div>
+
+  <div class="card" id="pravidelni">
+    <h2>Chodí pravidelně</h2>
+    <?php if (!$pravidelni): ?>
+      <p class="text-grey" style="margin:0">Zatím nikdo. Kdo si v potvrzovacím e-mailu klikne na
+        „Chodit na lekce pravidelně“, objeví se tady a na každou novou skupinovou lekci
+        ho systém přihlásí sám.</p>
+    <?php else: ?>
+      <p class="text-grey" style="margin:0 0 1.25rem">Tito lidé se automaticky přihlašují na každou
+        nově vypsanou skupinovou lekci a dostanou potvrzení e-mailem.</p>
+      <?php foreach ($pravidelni as $p): ?>
+        <div class="termin-hlava" style="padding:1rem 0;border-top:1px solid var(--line)">
+          <div>
+            <div class="termin-kdy"><?= e($p['jmeno']) ?></div>
+            <div class="termin-misto"><?= e($p['email']) ?><?= $p['telefon'] !== '' ? ' · ' . e($p['telefon']) : '' ?></div>
+          </div>
+          <div class="termin-akce">
+            <form method="post" style="display:inline" data-potvrdit="Opravdu vypnout?">
+              <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+              <input type="hidden" name="akce" value="zrusit_trvalou">
+              <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+              <button class="btn btn--ghost btn--mini" type="submit">Vypnout</button>
+            </form>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 
   <h2 style="margin:2.5rem 0 1.25rem">Termíny</h2>

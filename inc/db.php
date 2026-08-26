@@ -39,16 +39,6 @@ function db(): PDO
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
 
-        // Databáze vzniklé před zavedením typů sloupec nemají, doplníme ho.
-        // Stávající termíny zůstanou jako skupinové lekce.
-        $maTyp = false;
-        foreach ($pdo->query("PRAGMA table_info(terminy)") as $sloupec) {
-            if ($sloupec['name'] === 'typ') { $maTyp = true; break; }
-        }
-        if (!$maTyp) {
-            $pdo->exec("ALTER TABLE terminy ADD COLUMN typ TEXT NOT NULL DEFAULT 'lekce'");
-        }
-
         $pdo->exec("CREATE TABLE IF NOT EXISTS rezervace (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
             termin_id INTEGER NOT NULL REFERENCES terminy(id) ON DELETE CASCADE,
@@ -56,11 +46,67 @@ function db(): PDO
             email     TEXT    NOT NULL,
             telefon   TEXT    NOT NULL DEFAULT '',
             poznamka  TEXT    NOT NULL DEFAULT '',
+            token     TEXT    NOT NULL DEFAULT '',
+            zdroj     TEXT    NOT NULL DEFAULT 'web',
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
+
+        // Trvalá přihláška: člověk chodí na pravidelné skupinové lekce a každou
+        // nově vypsanou mu systém přidá sám.
+        $pdo->exec("CREATE TABLE IF NOT EXISTS trvale_prihlasky (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            jmeno     TEXT    NOT NULL,
+            email     TEXT    NOT NULL,
+            telefon   TEXT    NOT NULL DEFAULT '',
+            token     TEXT    NOT NULL DEFAULT '',
+            aktivni   INTEGER NOT NULL DEFAULT 1,
+            vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
+        )");
+
+        // Starší databáze nové sloupce nemají, doplníme je.
+        // Stávající termíny zůstanou jako skupinové lekce.
+        doplnit_sloupec($pdo, 'terminy', 'typ', "TEXT NOT NULL DEFAULT 'lekce'");
+        doplnit_sloupec($pdo, 'terminy', 'adresa', "TEXT NOT NULL DEFAULT ''");
+        doplnit_sloupec($pdo, 'rezervace', 'token', "TEXT NOT NULL DEFAULT ''");
+        doplnit_sloupec($pdo, 'rezervace', 'zdroj', "TEXT NOT NULL DEFAULT 'web'");
+
+        // Rezervace založené před zavedením e-mailů token nemají; bez něj by
+        // odkaz na zrušení v případném pozdějším e-mailu nefungoval.
+        foreach ($pdo->query("SELECT id FROM rezervace WHERE token = ''") as $r) {
+            $u = $pdo->prepare('UPDATE rezervace SET token = :t WHERE id = :id');
+            $u->execute([':t' => novy_token(), ':id' => $r['id']]);
+        }
     }
 
     return $pdo;
+}
+
+/** Přidá sloupec do tabulky, pokud v ní ještě není. */
+function doplnit_sloupec(PDO $pdo, string $tabulka, string $sloupec, string $definice): void
+{
+    foreach ($pdo->query("PRAGMA table_info({$tabulka})") as $s) {
+        if ($s['name'] === $sloupec) { return; }
+    }
+    $pdo->exec("ALTER TABLE {$tabulka} ADD COLUMN {$sloupec} {$definice}");
+}
+
+/** Náhodný token do odkazů v e-mailech (zrušení rezervace apod.). */
+function novy_token(): string
+{
+    return bin2hex(random_bytes(16));
+}
+
+/** Základní adresa webu — do absolutních odkazů v e-mailech. */
+function zakladni_url(): string
+{
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+
+    // Na vývojovém serveru odkazujeme na localhost, jinak vždy na ostrý web.
+    if (preg_match('~^(localhost|127\.0\.0\.1)(:\d+)?$~', $host)) {
+        return 'http://' . $host;
+    }
+
+    return 'https://themove.cz';
 }
 
 /**
@@ -102,4 +148,25 @@ function ceske_datum(string $datum): string
 {
     $t = strtotime($datum);
     return date('j', $t) . '. ' . date('n', $t) . '. ' . date('Y', $t);
+}
+
+/** Datum YYYY-MM-DD → „pondělí 8. září" (do e-mailů). */
+function datum_slovy(string $datum): string
+{
+    $mesice = [1 => 'ledna', 'února', 'března', 'dubna', 'května', 'června',
+               'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
+    $t = strtotime($datum);
+    $den = mb_strtolower(cesky_den($datum), 'UTF-8');
+
+    return $den . ' ' . date('j', $t) . '. ' . $mesice[(int) date('n', $t)];
+}
+
+/** Délka termínu v minutách podle času od–do. */
+function delka_minut(string $casOd, string $casDo): int
+{
+    $od = strtotime('2000-01-01 ' . $casOd);
+    $do = strtotime('2000-01-01 ' . $casDo);
+    if ($od === false || $do === false || $do <= $od) { return 0; }
+
+    return (int) round(($do - $od) / 60);
 }

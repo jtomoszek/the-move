@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../inc/db.php';
+require __DIR__ . '/../inc/rezervace.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -47,54 +47,22 @@ if (mb_strlen($telefon) > 30) {
 }
 
 try {
-    $pdo = db();
-    $pdo->beginTransaction();
+    $vysledek = vytvor_rezervaci(db(), $terminId, $jmeno, $email, $telefon);
 
-    $stmt = $pdo->prepare(
-        "SELECT t.*, (SELECT COUNT(*) FROM rezervace r WHERE r.termin_id = t.id) AS obsazeno
-         FROM terminy t
-         WHERE t.id = :id AND t.zverejnit = 1 AND t.datum >= :dnes"
-    );
-    $stmt->execute([':id' => $terminId, ':dnes' => date('Y-m-d')]);
-    $termin = $stmt->fetch();
-
-    if (!$termin) {
-        $pdo->rollBack();
-        odpoved(false, 'Tento termín už není dostupný.', 404);
+    if (!$vysledek['ok']) {
+        odpoved(false, $vysledek['chyba'], $vysledek['kod']);
     }
 
-    if ((int) $termin['obsazeno'] >= (int) $termin['kapacita']) {
-        $pdo->rollBack();
-        odpoved(false, 'Tento termín je bohužel již obsazený.', 409);
-    }
+    // Potvrzení účastníkovi; když se e-mail nepodaří odeslat, rezervace platí dál.
+    $odeslano = email_potvrzeni($vysledek['rezervace'], $vysledek['termin']);
 
-    $dup = $pdo->prepare(
-        'SELECT COUNT(*) FROM rezervace WHERE termin_id = :t AND email = :e COLLATE NOCASE'
-    );
-    $dup->execute([':t' => $terminId, ':e' => $email]);
-    if ((int) $dup->fetchColumn() > 0) {
-        $pdo->rollBack();
-        odpoved(false, 'Na tento termín jste již přihlášeni.', 409);
-    }
-
-    $ins = $pdo->prepare(
-        'INSERT INTO rezervace (termin_id, jmeno, email, telefon) VALUES (:t, :j, :e, :tel)'
-    );
-    $ins->execute([':t' => $terminId, ':j' => $jmeno, ':e' => $email, ':tel' => $telefon]);
-    $pdo->commit();
-
-    // Upozornění lektorce (na sdíleném hostingu funguje mail(); selhání nevadí).
-    $predmet = '=?UTF-8?B?' . base64_encode('Nová rezervace :: The Move') . '?=';
-    $telo = "Nová rezervace lekce:\n\n"
-        . cesky_den($termin['datum']) . ' ' . ceske_datum($termin['datum'])
-        . ' ' . $termin['cas_od'] . ' do ' . $termin['cas_do'] . "\n"
-        . $termin['misto'] . "\n\n"
-        . "Jméno: {$jmeno}\nE-mail: {$email}\nTelefon: {$telefon}\n";
-    @mail('info@themove.cz', $predmet, $telo,
-        "From: web@themove.cz\r\nContent-Type: text/plain; charset=UTF-8");
-
+    $termin = $vysledek['termin'];
     $volno = (int) $termin['kapacita'] - (int) $termin['obsazeno'] - 1;
-    odpoved(true, 'Děkujeme! Vaše místo je rezervované, brzy se vám ozveme.', 200, ['volno' => $volno]);
+    $zprava = $odeslano
+        ? 'Děkujeme! Vaše místo je rezervované, potvrzení jsme vám poslali e-mailem.'
+        : 'Děkujeme! Vaše místo je rezervované, brzy se vám ozveme.';
+
+    odpoved(true, $zprava, 200, ['volno' => $volno]);
 } catch (Throwable $e) {
     odpoved(false, 'Rezervaci se nepodařilo uložit, zkuste to prosím znovu.', 500);
 }

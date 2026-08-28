@@ -20,6 +20,8 @@ $rezervace = null;
 $termin = null;
 $prihlaska = null;
 $seznam = [];
+$pridane = [];
+$odebrane = [];
 $plne = 0;
 
 $token  = trim((string) ($_POST['token'] ?? $_GET['k'] ?? ''));
@@ -29,7 +31,8 @@ $jePost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 
 if ($token !== '') {
     $s = $pdo->prepare(
-        'SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ, t.cena, t.poznamka
+        'SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ, t.cena,
+                t.poznamka_email AS poznamka
          FROM rezervace r JOIN terminy t ON t.id = r.termin_id
          WHERE r.token = :tok'
     );
@@ -53,41 +56,24 @@ if ($token !== '') {
 if ($jePost && $akce === 'zrusit' && $rezervace) {
     $d = $pdo->prepare('DELETE FROM rezervace WHERE id = :id');
     $d->execute([':id' => $rezervace['id']]);
-
-    // Na přání i vypnutí e-mailů o nových termínech.
-    $vypnout = $pdo->prepare('UPDATE trvale_prihlasky SET aktivni = 0 WHERE email = :e COLLATE NOCASE AND aktivni = 1');
     $stav = 'zruseno';
-    if (overeny_typ($rezervace['typ']) === 'lekce' && !empty($_POST['zrusit_trvalou'])) {
-        $vypnout->execute([':e' => $rezervace['email']]);
-        $stav = 'zruseno_vse';
-    }
     $rezervace['zruseno'] = true;
 } elseif ($jePost && $akce === 'vybrat' && ($rezervace || $prihlaska)) {
-    // Výběr lekcí zaškrtnutím: přihlásíme na vybrané a zapneme odběr novinek.
+    // Výběr lekcí zaškrtnutím: srovnáme rezervace podle zaškrtnutí
+    // (nové přidáme, odškrtnuté zrušíme) a zapneme odběr novinek.
     $kdo = $rezervace ?: $prihlaska;
     $vybrane = array_map('intval', (array) ($_POST['terminy'] ?? []));
-    $vysledek = prihlas_na_vybrane($pdo, (string) $kdo['jmeno'], (string) $kdo['email'],
-                                   (string) ($kdo['telefon'] ?? ''), $vybrane);
+    $vysledek = uprav_vyber($pdo, (string) $kdo['jmeno'], (string) $kdo['email'],
+                            (string) ($kdo['telefon'] ?? ''), $vybrane);
     $prihlaska = $vysledek['prihlaska'];
-    if ($vysledek['pridane']) {
-        email_pravidelne($vysledek['prihlaska'], $vysledek['pridane']);
+    if ($vysledek['pridane'] || $vysledek['odebrane']) {
+        email_pravidelne($vysledek['prihlaska'], $vysledek['aktualni']);
     }
-    $seznam = $vysledek['pridane'];
+    $seznam = $vysledek['aktualni'];
+    $odebrane = $vysledek['odebrane'];
+    $pridane = $vysledek['pridane'];
     $plne = (int) $vysledek['plne'];
     $stav = 'vybrano';
-} elseif ($jePost && $akce === 'zrusit_trvalou' && $prihlaska) {
-    $u = $pdo->prepare('UPDATE trvale_prihlasky SET aktivni = 0 WHERE id = :id');
-    $u->execute([':id' => $prihlaska['id']]);
-    $stav = 'trvala_zrusena';
-
-    if (!empty($_POST['zrusit_rezervace'])) {
-        $d = $pdo->prepare(
-            "DELETE FROM rezervace WHERE email = :e COLLATE NOCASE AND zdroj = 'trvala'
-             AND termin_id IN (SELECT id FROM terminy WHERE datum >= :dnes)"
-        );
-        $d->execute([':e' => $prihlaska['email'], ':dnes' => date('Y-m-d')]);
-        $stav = 'trvala_zrusena_vse';
-    }
 }
 
 if ($stav === '' && $token === '' && $tokenP === '') {
@@ -100,7 +86,7 @@ if ($stav === '' && $token === '' && $tokenP === '') {
 $vyberLekci = [];
 $zobrazitVyber = $stav === ''
     && (($rezervace && $akce === 'pravidelne' && overeny_typ($rezervace['typ']) === 'lekce')
-        || ($prihlaska && $akce !== 'zrusit_trvalou'));
+        || $prihlaska);
 if ($zobrazitVyber) {
     $email = (string) ($rezervace['email'] ?? $prihlaska['email']);
     $moje = [];
@@ -140,9 +126,9 @@ function vypis_vyber_lekci(array $lekce): void
     foreach ($lekce as $l) {
         $volno = max(0, (int) $l['kapacita'] - (int) $l['obsazeno']);
         if ($l['mam']) {
-            echo '<label class="rez-lekce rez-lekce--mam"><input type="checkbox" checked disabled>'
+            echo '<label class="rez-lekce rez-lekce--mam"><input type="checkbox" name="terminy[]" value="' . (int) $l['id'] . '" checked>'
                 . '<span>' . h(radek_terminu($l))
-                . '<span class="stav">Už jste přihlášeni</span></span></label>';
+                . '<span class="stav">Jste přihlášeni · odškrtnutím se z lekce odhlásíte</span></span></label>';
         } elseif ($l['plno']) {
             echo '<label class="rez-lekce rez-lekce--plno"><input type="checkbox" disabled>'
                 . '<span>' . h(radek_terminu($l))
@@ -189,8 +175,7 @@ $minula  = $rezervace && $rezervace['datum'] < date('Y-m-d');
     .rez-vyber { margin: 2rem 0 0; border-top: 2px solid var(--ink); }
     .rez-lekce { display: flex; gap: 0.85rem; align-items: flex-start; padding: 0.9rem 0; border-bottom: 1px solid var(--line); font-size: 0.9375rem; cursor: pointer; }
     .rez-lekce input { margin-top: 0.3rem; width: 1.1rem; height: 1.1rem; accent-color: var(--yellow); flex: none; }
-    .rez-lekce--mam { cursor: default; }
-    .rez-lekce--mam input { accent-color: var(--grey); }
+    .rez-lekce--mam input { accent-color: var(--ink); }
     .rez-lekce .stav { display: block; font-size: 0.8125rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.15rem; }
     .rez-lekce--plno { cursor: default; color: var(--grey); text-decoration: line-through; }
     .rez-lekce--plno .stav { text-decoration: none; }
@@ -213,70 +198,49 @@ $minula  = $rezervace && $rezervace['datum'] < date('Y-m-d');
       <p class="text-grey"><?= h($chyba) ?></p>
       <div class="rez-akce"><a class="button button--solid" href="index.html#terminy">Zobrazit termíny</a></div>
 
-    <?php elseif ($stav === 'zruseno' || $stav === 'zruseno_vse'): ?>
+    <?php elseif ($stav === 'zruseno'): ?>
       <h1>Rezervace je zrušená.</h1>
       <p class="text-grey">Místo jsme uvolnili někomu dalšímu. Díky, že jste dali vědět.</p>
-      <?php if ($stav === 'zruseno_vse'): ?>
-        <p class="text-grey">Zároveň jsme vypnuli pravidelnou docházku — na další lekce vás už automaticky přihlašovat nebudeme.</p>
-      <?php endif; ?>
       <div class="rez-akce"><a class="button button--solid" href="index.html#terminy">Vybrat jiný termín</a></div>
 
     <?php elseif ($stav === 'vybrano'): ?>
-      <?php if ($seznam): ?>
-        <h1>Máte místa.</h1>
-        <p class="text-grey">Přihlásili jsme vás na vybrané lekce, potvrzení máte v e-mailu.
-          Kdykoli vypíšeme nové termíny, dáme vám vědět.</p>
-        <ul class="rez-seznam">
-          <?php foreach ($seznam as $t): ?><li><?= h(radek_terminu($t)) ?></li><?php endforeach; ?>
-        </ul>
+      <h1>Výběr je uložený.</h1>
+      <?php if ($pridane || $odebrane): ?>
+        <p class="text-grey">
+          <?php if ($pridane): ?>Přihlásili jsme vás na <?= count($pridane) ?>
+            <?= count($pridane) === 1 ? 'lekci' : (count($pridane) < 5 ? 'lekce' : 'lekcí') ?>.<?php endif; ?>
+          <?php if ($odebrane): ?> Odhlásili jsme vás z <?= count($odebrane) ?>
+            <?= count($odebrane) === 1 ? 'lekce' : 'lekcí' ?>.<?php endif; ?>
+          Souhrn máte v e-mailu.
+        </p>
       <?php else: ?>
-        <h1>Dáme vám vědět.</h1>
-        <p class="text-grey">Žádnou lekci jste nevybrali, ale kdykoli vypíšeme nové termíny,
-          pošleme vám e-mail a vyberete si z nich.</p>
+        <p class="text-grey">Nic se nezměnilo — výběr zůstává, jak byl.</p>
       <?php endif; ?>
       <?php if ($plne > 0): ?>
         <p class="text-grey"><?= $plne === 1 ? 'Jedna z vybraných lekcí už byla mezitím plná.'
             : 'Některé z vybraných lekcí už byly mezitím plné.' ?></p>
       <?php endif; ?>
-      <div class="rez-akce"><a class="button button--solid" href="index.html#terminy">Zobrazit termíny</a></div>
-
-    <?php elseif ($stav === 'trvala_zrusena' || $stav === 'trvala_zrusena_vse'): ?>
-      <h1>Pravidelná docházka je zrušená.</h1>
-      <p class="text-grey">Na nové lekce vás už automaticky přihlašovat nebudeme.</p>
-      <?php if ($stav === 'trvala_zrusena_vse'): ?>
-        <p class="text-grey">Zrušili jsme i vaše budoucí rezervace, které z pravidelné docházky vznikly.</p>
+      <?php if ($seznam): ?>
+        <p class="text-grey" style="margin-top:1.5rem">Aktuálně jste přihlášeni na:</p>
+        <ul class="rez-seznam">
+          <?php foreach ($seznam as $t): ?><li><?= h(radek_terminu($t)) ?></li><?php endforeach; ?>
+        </ul>
       <?php else: ?>
-        <p class="text-grey">Rezervace, které už máte, platí dál — zrušit je můžete odkazem v potvrzovacím e-mailu.</p>
+        <p class="text-grey" style="margin-top:1.5rem">Aktuálně nejste přihlášeni na žádnou lekci.
+          Kdykoli vypíšeme nové termíny, dáme vám vědět e-mailem.</p>
       <?php endif; ?>
       <div class="rez-akce"><a class="button button--solid" href="index.html#terminy">Zobrazit termíny</a></div>
 
-    <?php elseif ($prihlaska && $akce === 'zrusit_trvalou'): ?>
-      <h1>Zrušit odběr novinek?</h1>
-      <p class="text-grey">O nově vypsaných lekcích vám už nebudeme posílat e-maily.</p>
-      <form method="post">
-        <input type="hidden" name="token_p" value="<?= h($prihlaska['token']) ?>">
-        <input type="hidden" name="akce" value="zrusit_trvalou">
-        <label class="rez-volba">
-          <input type="checkbox" name="zrusit_rezervace" value="1">
-          <span>Zrušit i budoucí rezervace, které jsem si přes tyto e-maily vytvořil(a).</span>
-        </label>
-        <div class="rez-akce">
-          <button class="button button--solid" type="submit">Zrušit odběr</button>
-          <a class="button" href="rezervace.php?p=<?= urlencode($prihlaska['token']) ?>">Zpět</a>
-        </div>
-      </form>
-
     <?php elseif ($prihlaska): ?>
-      <h1>Vyberte si lekce.</h1>
-      <p class="text-grey">Zaškrtněte termíny, na které chcete přijít, a místa vám rezervujeme.
-        O každé nově vypsané lekci vám dáme vědět e-mailem.</p>
+      <h1>Vaše lekce.</h1>
+      <p class="text-grey">Zaškrtněte termíny, na které chcete přijít — místa vám rezervujeme.
+        Odškrtnutím se z lekce odhlásíte. O každé nově vypsané lekci vám dáme vědět e-mailem.</p>
       <form method="post">
         <input type="hidden" name="token_p" value="<?= h($prihlaska['token']) ?>">
         <input type="hidden" name="akce" value="vybrat">
         <?php vypis_vyber_lekci($vyberLekci) ?>
         <div class="rez-akce">
-          <button class="button button--solid" type="submit">Přihlásit na vybrané</button>
-          <a class="button" href="rezervace.php?p=<?= urlencode($prihlaska['token']) ?>&amp;akce=zrusit_trvalou">Zrušit odběr novinek</a>
+          <button class="button button--solid" type="submit">Uložit můj výběr</button>
         </div>
       </form>
 
@@ -287,14 +251,14 @@ $minula  = $rezervace && $rezervace['datum'] < date('Y-m-d');
       <?php elseif ($akce === 'pravidelne' && $jeLekce && !$minula): ?>
         <h1>Chodit pravidelně?</h1>
         <p class="text-grey">Zaškrtněte lekce, na které chcete přijít, a místa vám rezervujeme
-          najednou. O každé nově vypsané lekci vám pak dáme vědět e-mailem, ať si můžete
-          vybrat další. Kdykoli to můžete zrušit.</p>
+          najednou. Odškrtnutím se z lekce zase odhlásíte. O každé nově vypsané lekci vám
+          pak dáme vědět e-mailem, ať si můžete vybrat další.</p>
         <form method="post">
           <input type="hidden" name="token" value="<?= h($rezervace['token']) ?>">
           <input type="hidden" name="akce" value="vybrat">
           <?php vypis_vyber_lekci($vyberLekci) ?>
           <div class="rez-akce">
-            <button class="button button--solid" type="submit">Přihlásit na vybrané</button>
+            <button class="button button--solid" type="submit">Uložit můj výběr</button>
             <a class="button" href="rezervace.php?k=<?= urlencode($rezervace['token']) ?>">Zpět</a>
           </div>
         </form>
@@ -328,12 +292,6 @@ $minula  = $rezervace && $rezervace['datum'] < date('Y-m-d');
         <form method="post">
           <input type="hidden" name="token" value="<?= h($rezervace['token']) ?>">
           <input type="hidden" name="akce" value="zrusit">
-          <?php if ($jeLekce): ?>
-            <label class="rez-volba">
-              <input type="checkbox" name="zrusit_trvalou" value="1">
-              <span>Už mi neposílejte ani e-maily o nově vypsaných lekcích.</span>
-            </label>
-          <?php endif; ?>
           <div class="rez-akce">
             <button class="button button--solid" type="submit">Zrušit rezervaci</button>
             <a class="button" href="rezervace.php?k=<?= urlencode($rezervace['token']) ?>">Nechat rezervaci</a>

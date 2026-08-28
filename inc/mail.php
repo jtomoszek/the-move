@@ -204,7 +204,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         'kdy'              => $kdy,
         'kde'              => $kde,
         'cena'             => trim((string) ($termin['cena'] ?? '')),
-        'poznamka'         => (string) ($termin['poznamka'] ?? ''),
+        'poznamka'         => (string) ($termin['poznamka_email'] ?? ''),
         'na_jmeno'         => $rezervace['jmeno'],
         'cislo_rezervace'  => 'R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT),
         'tlacitko_url'     => zakladni_url() . '/api/kalendar.php?k=' . urlencode($rezervace['token']),
@@ -216,7 +216,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         'seznam'     => false,
         'perex2'     => $perex2 !== '',
         'cena'       => trim((string) ($termin['cena'] ?? '')) !== '',
-        'poznamka'   => trim((string) ($termin['poznamka'] ?? '')) !== '',
+        'poznamka'   => trim((string) ($termin['poznamka_email'] ?? '')) !== '',
         'pravidelne' => $jePravidelna,
     ]);
 
@@ -228,7 +228,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         . 'Kdy: ' . $kdy . "\n"
         . 'Kde: ' . $kde . "\n"
         . (trim((string) ($termin['cena'] ?? '')) !== '' ? 'Cena: ' . $termin['cena'] . "\n" : '')
-        . (trim((string) ($termin['poznamka'] ?? '')) !== '' ? 'Poznámka: ' . $termin['poznamka'] . "\n" : '')
+        . (trim((string) ($termin['poznamka_email'] ?? '')) !== '' ? 'Poznámka: ' . $termin['poznamka_email'] . "\n" : '')
         . 'Na jméno: ' . $rezervace['jmeno'] . "\n"
         . 'Rezervace: #R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT) . "\n\n"
         . 'Přidat do kalendáře: ' . zakladni_url() . '/api/kalendar.php?k=' . $rezervace['token'] . "\n"
@@ -243,13 +243,18 @@ function email_potvrzeni(array $rezervace, array $termin): bool
 }
 
 /**
- * Souhrn lekcí, na které se člověk právě přihlásil výběrem ze seznamu.
- * U každé lekce je odkaz, kterým se z ní dá odhlásit.
+ * Aktuální přehled lekcí, na které je člověk přihlášený — posílá se po každé
+ * úpravě výběru. U každé lekce je odkaz, kterým se z ní dá odhlásit.
  */
 function email_pravidelne(array $prihlaska, array $rezervace): bool
 {
     $radky = '';
     $seznamText = '';
+    if (!$rezervace) {
+        $radky = '<tr><td style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:22px;color:#111111;">'
+            . 'Aktuálně nejste přihlášeni na žádnou lekci.</td></tr>';
+        $seznamText = "Aktuálně nejste přihlášeni na žádnou lekci.\n";
+    }
     foreach ($rezervace as $r) {
         $zrusit = odkaz_rezervace($r['token'], 'zrusit');
         $radky .= '<tr>'
@@ -264,19 +269,18 @@ function email_pravidelne(array $prihlaska, array $rezervace): bool
     }
 
     $pocet = count($rezervace);
-    $perex = 'Přihlásili jsme vás na ' . $pocet . ' ' . sklonuj_lekce($pocet)
-        . '. Den před každou z nich vám pošleme připomenutí. A kdykoli vypíšeme nové'
-        . ' skupinové lekce, dáme vám vědět e-mailem, ať si můžete vybrat další.';
+    $perex = 'Tady je aktuální přehled lekcí, na které jste přihlášeni. Den před'
+        . ' každou z nich vám pošleme připomenutí. A kdykoli vypíšeme nové skupinové'
+        . ' lekce, dáme vám vědět e-mailem, ať si můžete vybrat další.';
 
-    $zruseni = 'Nechcete e-maily o nových termínech dostávat? <a href="'
-        . htmlspecialchars(odkaz_trvale((string) $prihlaska['token']), ENT_QUOTES, 'UTF-8')
-        . '" style="color:#111111;text-decoration:underline;">Odhlaste se zde</a> — vaše rezervace zůstanou beze změny.';
+    $zruseni = 'Kdyby se něco změnilo, výběr lekcí můžete kdykoli upravit tlačítkem výše'
+        . ' nebo odkazem u jednotlivého termínu.';
 
     $html = sablona_zprava(mail_zaklad() + [
         'titulek'        => 'Vaše lekce · The Move',
-        'preheader'      => 'Přihlásili jsme vás na ' . $pocet . ' ' . sklonuj_lekce($pocet) . '.',
+        'preheader'      => 'Aktuálně jste přihlášeni na ' . $pocet . ' ' . sklonuj_lekce($pocet) . '.',
         'stitek'         => 'Pravidelné lekce',
-        'nadpis'         => 'Máte místa.',
+        'nadpis'         => 'Vaše lekce.',
         'perex'          => $perex,
         'nazev_seznamu'  => 'Vaše lekce',
         'html_seznam_radky' => $radky,
@@ -289,7 +293,7 @@ function email_pravidelne(array $prihlaska, array $rezervace): bool
         'pravidelne' => false,
     ]);
 
-    $text = "Máte místa.\n\n" . $perex . "\n\n"
+    $text = "Vaše lekce.\n\n" . $perex . "\n\n"
         . "Vaše lekce:\n" . $seznamText . "\n"
         . 'Upravit můj výběr: ' . odkaz_trvale((string) $prihlaska['token']) . "\n\n"
         . "Více pohybu. Více radosti. Více života.\n\n"
@@ -297,7 +301,7 @@ function email_pravidelne(array $prihlaska, array $rezervace): bool
         . MAIL_FIRMA . "\n";
 
     return posli_mail((string) $prihlaska['email'], (string) $prihlaska['jmeno'],
-        'Máte místa — přihlášení na ' . $pocet . ' ' . sklonuj_lekce($pocet), $html, $text);
+        'Vaše lekce — aktuálně jste přihlášeni na ' . $pocet . ' ' . sklonuj_lekce($pocet), $html, $text);
 }
 
 /**
@@ -328,9 +332,7 @@ function email_nove_terminy(array $prihlaska, array $terminy): bool
         $perex = 'Vypsali jsme ' . $pocet . ' nových skupinových lekcí. Vyberte si, na které chcete přijít — stačí je zaškrtnout a místa vám rezervujeme hned.';
     }
 
-    $zruseni = 'Nechcete e-maily o nových termínech dostávat? <a href="'
-        . htmlspecialchars(odkaz_trvale((string) $prihlaska['token']), ENT_QUOTES, 'UTF-8')
-        . '" style="color:#111111;text-decoration:underline;">Odhlaste se zde</a> — vaše rezervace zůstanou beze změny.';
+    $zruseni = 'Výběr lekcí můžete stejným odkazem kdykoli upravit — přihlásit se na další termíny i některý zrušit.';
 
     $html = sablona_zprava(mail_zaklad() + [
         'titulek'           => 'Nové termíny · The Move',
@@ -408,7 +410,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         'kdy'              => $kdy,
         'kde'              => $kde,
         'cena'             => trim((string) ($termin['cena'] ?? '')),
-        'poznamka'         => (string) ($termin['poznamka'] ?? ''),
+        'poznamka'         => (string) ($termin['poznamka_email'] ?? ''),
         'na_jmeno'         => $rezervace['jmeno'],
         'cislo_rezervace'  => 'R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT),
         'tlacitko_url'     => zakladni_url() . '/api/kalendar.php?k=' . urlencode($rezervace['token']),
@@ -419,7 +421,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         'seznam'     => false,
         'perex2'     => $perex2 !== '',
         'cena'       => trim((string) ($termin['cena'] ?? '')) !== '',
-        'poznamka'   => trim((string) ($termin['poznamka'] ?? '')) !== '',
+        'poznamka'   => trim((string) ($termin['poznamka_email'] ?? '')) !== '',
         'pravidelne' => false,
     ]);
 
@@ -430,7 +432,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         . 'Kdy: ' . $kdy . "\n"
         . 'Kde: ' . $kde . "\n"
         . (trim((string) ($termin['cena'] ?? '')) !== '' ? 'Cena: ' . $termin['cena'] . "\n" : '')
-        . (trim((string) ($termin['poznamka'] ?? '')) !== '' ? 'Poznámka: ' . $termin['poznamka'] . "\n" : '')
+        . (trim((string) ($termin['poznamka_email'] ?? '')) !== '' ? 'Poznámka: ' . $termin['poznamka_email'] . "\n" : '')
         . 'Rezervace: #R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT) . "\n\n"
         . 'Přidat do kalendáře: ' . zakladni_url() . '/api/kalendar.php?k=' . $rezervace['token'] . "\n"
         . 'Zrušit rezervaci: ' . odkaz_rezervace($rezervace['token'], 'zrusit') . "\n\n"

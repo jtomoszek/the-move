@@ -39,7 +39,8 @@ function db(): PDO
             typ       TEXT    NOT NULL DEFAULT 'lekce',
             cena      TEXT    NOT NULL DEFAULT '',
             kapacita  INTEGER NOT NULL DEFAULT 8,
-            poznamka  TEXT    NOT NULL DEFAULT '',
+            poznamka  TEXT    NOT NULL DEFAULT '',       -- zobrazuje se na webu
+            poznamka_email TEXT NOT NULL DEFAULT '',     -- jde do e-mailů
             zverejnit INTEGER NOT NULL DEFAULT 1,
             oznameno  INTEGER NOT NULL DEFAULT 1,
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -76,6 +77,7 @@ function db(): PDO
         doplnit_sloupec($pdo, 'terminy', 'typ', "TEXT NOT NULL DEFAULT 'lekce'");
         doplnit_sloupec($pdo, 'terminy', 'adresa', "TEXT NOT NULL DEFAULT ''");
         doplnit_sloupec($pdo, 'terminy', 'cena', "TEXT NOT NULL DEFAULT ''");
+        doplnit_sloupec($pdo, 'terminy', 'poznamka_email', "TEXT NOT NULL DEFAULT ''");
         // 0 = pravidelní účastníci o tomto termínu ještě nedostali e-mail
         doplnit_sloupec($pdo, 'terminy', 'oznameno', 'INTEGER NOT NULL DEFAULT 1');
         doplnit_sloupec($pdo, 'rezervace', 'token', "TEXT NOT NULL DEFAULT ''");

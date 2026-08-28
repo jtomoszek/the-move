@@ -123,6 +123,7 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         $cena     = trim((string) ($_POST['cena'] ?? ''));
         $kapacita = max(1, min(100, (int) ($_POST['kapacita'] ?? 8)));
         $poznamka = trim((string) ($_POST['poznamka'] ?? ''));
+        $poznamkaEmail = trim((string) ($_POST['poznamka_email'] ?? ''));
         $zverejnit = isset($_POST['zverejnit']) ? 1 : 0;
 
         $okDatum = preg_match('/^\d{4}-\d{2}-\d{2}$/', $datum) === 1;
@@ -133,17 +134,19 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         } elseif ($akce === 'pridat') {
             // Nová skupinová lekce čeká na oznámení pravidelným účastníkům
             // (oznameno = 0); u workshopu a semináře se nic neoznamuje.
-            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, cena, kapacita, poznamka, zverejnit, oznameno)
-                                VALUES (:d, :od, :do, :m, :a, :typ, :c, :k, :p, :z, :ozn)');
+            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, cena, kapacita, poznamka, poznamka_email, zverejnit, oznameno)
+                                VALUES (:d, :od, :do, :m, :a, :typ, :c, :k, :p, :pe, :z, :ozn)');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
-                         ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
+                         ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka,
+                         ':pe' => $poznamkaEmail, ':z' => $zverejnit,
                          ':ozn' => $typ === 'lekce' ? 0 : 1]);
             presmeruj('?ok=pridano');
         } else {
             $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m, adresa=:a,
-                                typ=:typ, cena=:c, kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
+                                typ=:typ, cena=:c, kapacita=:k, poznamka=:p, poznamka_email=:pe, zverejnit=:z WHERE id=:id');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
-                         ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
+                         ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka,
+                         ':pe' => $poznamkaEmail, ':z' => $zverejnit,
                          ':id' => (int) ($_POST['id'] ?? 0)]);
             presmeruj('?ok=upraveno');
         }
@@ -439,16 +442,20 @@ details[open] summary::before { content:"− "; }
                  data-vychozi='{"lekce":"200 Kč","workshop":"600 Kč","seminar":""}'></div>
       </div>
       <div class="grid">
-        <div class="pole" style="grid-column:span 4"><label>Poznámka (nepovinné, jde do e-mailů a na web)</label>
+        <div class="pole" style="grid-column:span 4"><label>Poznámka na web (nepovinné, zobrazí se v seznamu termínů)</label>
+          <textarea name="poznamka" rows="2"><?= e($editTermin['poznamka'] ?? '') ?></textarea></div>
+      </div>
+      <div class="grid">
+        <div class="pole" style="grid-column:span 4"><label>Poznámka do e-mailů (nepovinné, přijde v potvrzení a připomínce)</label>
           <?php
-          // U nové skupinové lekce je poznámka předvyplněná popisem cesty;
-          // u workshopu a semináře se pole vyprázdní (hlídá skript níže).
+          // U nové skupinové lekce je e-mailová poznámka předvyplněná popisem
+          // cesty; u workshopu a semináře se vyprázdní (hlídá skript níže).
           $poznamkaVychozi = 'Lekce probíhají ve cvičebním sále v prvním patře DK Poklad. '
               . 'Ze vstupní haly půjdete vpravo po schodech nahoru - šatny i sál jsou potom v levé části. '
               . 'V kulturním domě funguje u vstupu recepce, tam Vás případně nasměrují.';
-          $poznamkaHodnota = $editTermin ? (string) $editTermin['poznamka'] : $poznamkaVychozi;
+          $poznamkaEmailHodnota = $editTermin ? (string) ($editTermin['poznamka_email'] ?? '') : $poznamkaVychozi;
           ?>
-          <textarea name="poznamka" rows="3" data-vychozi-lekce="<?= e($poznamkaVychozi) ?>"><?= e($poznamkaHodnota) ?></textarea></div>
+          <textarea name="poznamka_email" rows="3" data-vychozi-lekce="<?= e($poznamkaVychozi) ?>"><?= e($poznamkaEmailHodnota) ?></textarea></div>
       </div>
       <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
         <label class="prepinac" style="margin:0">
@@ -611,12 +618,12 @@ document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
   btn.addEventListener('blur', function () { if (nabito) { setTimeout(reset, 200); } });
 });
 
-/* Poznámka s popisem cesty patří jen ke skupinovým lekcím: při přepnutí druhu
-   na workshop/seminář se předvyplněný text uklidí, při návratu zase doplní.
-   Vlastního textu se skript nedotkne. */
+/* E-mailová poznámka s popisem cesty patří jen ke skupinovým lekcím: při
+   přepnutí druhu na workshop/seminář se předvyplněný text uklidí, při návratu
+   zase doplní. Vlastního textu se skript nedotkne. */
 (function () {
   var typ = document.querySelector('select[name=typ]');
-  var poznamka = document.querySelector('textarea[name=poznamka]');
+  var poznamka = document.querySelector('textarea[name=poznamka_email]');
   if (!typ || !poznamka) { return; }
   var vychozi = poznamka.dataset.vychoziLekce || '';
 

@@ -116,13 +116,14 @@ function zapis_odberatele(PDO $pdo, string $jmeno, string $email, string $telefo
 }
 
 /**
- * Přihlásí člověka na vybrané skupinové lekce (zaškrtnuté na stránce výběru)
- * a zapíše ho mezi odběratele novinek.
+ * Srovná rezervace člověka podle zaškrtnutí na stránce výběru: na nově
+ * zaškrtnuté lekce ho přihlásí, z odškrtnutých odhlásí. Zapíše ho i mezi
+ * odběratele novinek.
  *
- * @param int[] $terminIds
- * @return array{prihlaska:array,pridane:array,plne:int}
+ * @param int[] $terminIds zaškrtnuté termíny
+ * @return array{prihlaska:array,pridane:array,odebrane:array,aktualni:array,plne:int}
  */
-function prihlas_na_vybrane(PDO $pdo, string $jmeno, string $email, string $telefon, array $terminIds): array
+function uprav_vyber(PDO $pdo, string $jmeno, string $email, string $telefon, array $terminIds): array
 {
     $prihlaska = zapis_odberatele($pdo, $jmeno, $email, $telefon);
 
@@ -132,10 +133,22 @@ function prihlas_na_vybrane(PDO $pdo, string $jmeno, string $email, string $tele
         $lekce[(int) $l['id']] = $l;
     }
 
+    $chtene = array_values(array_intersect(array_unique(array_map('intval', $terminIds)), array_keys($lekce)));
+
+    // Stávající rezervace na budoucí skupinové lekce.
+    $mam = [];
+    $s = $pdo->prepare('SELECT id, termin_id FROM rezervace WHERE email = :e COLLATE NOCASE');
+    $s->execute([':e' => $email]);
+    foreach ($s->fetchAll() as $r) {
+        if (isset($lekce[(int) $r['termin_id']])) {
+            $mam[(int) $r['termin_id']] = (int) $r['id'];
+        }
+    }
+
     $pridane = [];
     $plne = 0;
-    foreach (array_unique(array_map('intval', $terminIds)) as $id) {
-        if (!isset($lekce[$id])) { continue; }
+    foreach ($chtene as $id) {
+        if (isset($mam[$id])) { continue; }
         $vysledek = vytvor_rezervaci($pdo, $id, $jmeno, $email, $telefon, 'trvala');
         if ($vysledek['ok']) {
             $pridane[] = ['token' => $vysledek['rezervace']['token']] + $lekce[$id];
@@ -144,7 +157,24 @@ function prihlas_na_vybrane(PDO $pdo, string $jmeno, string $email, string $tele
         }
     }
 
-    return ['prihlaska' => $prihlaska, 'pridane' => $pridane, 'plne' => $plne];
+    $odebrane = [];
+    foreach ($mam as $terminId => $rezervaceId) {
+        if (in_array($terminId, $chtene, true)) { continue; }
+        $d = $pdo->prepare('DELETE FROM rezervace WHERE id = :id');
+        $d->execute([':id' => $rezervaceId]);
+        $odebrane[] = $lekce[$terminId];
+    }
+
+    // Aktuální stav po úpravě — jde do souhrnného e-mailu.
+    $a = $pdo->prepare(
+        "SELECT r.token, t.* FROM rezervace r JOIN terminy t ON t.id = r.termin_id
+         WHERE r.email = :e COLLATE NOCASE AND t.zverejnit = 1 AND t.typ = 'lekce' AND t.datum >= :dnes
+         ORDER BY t.datum, t.cas_od"
+    );
+    $a->execute([':e' => $email, ':dnes' => date('Y-m-d')]);
+
+    return ['prihlaska' => $prihlaska, 'pridane' => $pridane, 'odebrane' => $odebrane,
+            'aktualni' => $a->fetchAll(), 'plne' => $plne];
 }
 
 /**
@@ -227,7 +257,7 @@ function odesli_pripominky(PDO $pdo): int
 
     $s = $pdo->prepare(
         "SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ, t.cena,
-                t.poznamka AS termin_poznamka
+                t.poznamka_email AS termin_poznamka_email
          FROM rezervace r JOIN terminy t ON t.id = r.termin_id
          WHERE r.pripominka = 0 AND t.zverejnit = 1
            AND t.datum IN (" . implode(',', array_fill(0, count($datumy), '?')) . ')'
@@ -244,7 +274,7 @@ function odesli_pripominky(PDO $pdo): int
         $termin = [
             'datum' => $r['datum'], 'cas_od' => $r['cas_od'], 'cas_do' => $r['cas_do'],
             'misto' => $r['misto'], 'adresa' => $r['adresa'], 'typ' => $r['typ'],
-            'cena' => $r['cena'], 'poznamka' => $r['termin_poznamka'],
+            'cena' => $r['cena'], 'poznamka_email' => $r['termin_poznamka_email'],
         ];
         if (email_pripominka($r, $termin)) {
             $odeslano++;

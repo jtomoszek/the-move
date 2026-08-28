@@ -120,6 +120,7 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         $misto    = trim((string) ($_POST['misto'] ?? ''));
         $adresa   = trim((string) ($_POST['adresa'] ?? ''));
         $typ      = overeny_typ($_POST['typ'] ?? null);
+        $cena     = trim((string) ($_POST['cena'] ?? ''));
         $kapacita = max(1, min(100, (int) ($_POST['kapacita'] ?? 8)));
         $poznamka = trim((string) ($_POST['poznamka'] ?? ''));
         $zverejnit = isset($_POST['zverejnit']) ? 1 : 0;
@@ -132,17 +133,17 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         } elseif ($akce === 'pridat') {
             // Nová skupinová lekce čeká na oznámení pravidelným účastníkům
             // (oznameno = 0); u workshopu a semináře se nic neoznamuje.
-            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, kapacita, poznamka, zverejnit, oznameno)
-                                VALUES (:d, :od, :do, :m, :a, :typ, :k, :p, :z, :ozn)');
+            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, cena, kapacita, poznamka, zverejnit, oznameno)
+                                VALUES (:d, :od, :do, :m, :a, :typ, :c, :k, :p, :z, :ozn)');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
-                         ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
+                         ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
                          ':ozn' => $typ === 'lekce' ? 0 : 1]);
             presmeruj('?ok=pridano');
         } else {
             $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m, adresa=:a,
-                                typ=:typ, kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
+                                typ=:typ, cena=:c, kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
-                         ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
+                         ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
                          ':id' => (int) ($_POST['id'] ?? 0)]);
             presmeruj('?ok=upraveno');
         }
@@ -426,8 +427,10 @@ details[open] summary::before { content:"− "; }
           <input type="text" name="misto" required value="<?= e($editTermin['misto'] ?? 'Ostrava-Poruba · Poklad') ?>"></div>
       </div>
       <div class="grid">
-        <div class="pole" style="grid-column:span 4"><label>Adresa (nepovinné, jde do e-mailu)</label>
+        <div class="pole" style="grid-column:span 3"><label>Adresa (nepovinné, jde do e-mailu)</label>
           <input type="text" name="adresa" value="<?= e($editTermin['adresa'] ?? '') ?>"></div>
+        <div class="pole"><label>Cena (např. 250 Kč)</label>
+          <input type="text" name="cena" value="<?= e($editTermin['cena'] ?? '') ?>"></div>
       </div>
       <div class="grid">
         <div class="pole" style="grid-column:span 4"><label>Poznámka (nepovinné, jde do e-mailů a na web)</label>
@@ -514,7 +517,7 @@ details[open] summary::before { content:"− "; }
     <div class="termin-hlava">
       <div>
         <div class="termin-kdy"><?= e(cesky_den($t['datum'])) ?> <?= e(ceske_datum($t['datum'])) ?> · <?= e($t['cas_od']) ?> do <?= e($t['cas_do']) ?></div>
-        <div class="termin-misto"><?= e($t['misto']) ?><?= $t['poznamka'] !== '' ? ' · ' . e($t['poznamka']) : '' ?></div>
+        <div class="termin-misto"><?= e($t['misto']) ?><?= trim((string) ($t['cena'] ?? '')) !== '' ? ' · ' . e($t['cena']) : '' ?><?= $t['poznamka'] !== '' ? ' · ' . e($t['poznamka']) : '' ?></div>
       </div>
       <span class="badge badge--typ"><?= e(nazev_typu($t['typ'] ?? null)) ?></span>
       <span class="badge <?= $volno === 0 ? 'badge--plno' : 'badge--volno' ?>">

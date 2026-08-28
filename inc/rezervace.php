@@ -226,7 +226,7 @@ function odesli_pripominky(PDO $pdo): int
     }
 
     $s = $pdo->prepare(
-        "SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ,
+        "SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ, t.cena,
                 t.poznamka AS termin_poznamka
          FROM rezervace r JOIN terminy t ON t.id = r.termin_id
          WHERE r.pripominka = 0 AND t.zverejnit = 1
@@ -244,7 +244,7 @@ function odesli_pripominky(PDO $pdo): int
         $termin = [
             'datum' => $r['datum'], 'cas_od' => $r['cas_od'], 'cas_do' => $r['cas_do'],
             'misto' => $r['misto'], 'adresa' => $r['adresa'], 'typ' => $r['typ'],
-            'poznamka' => $r['termin_poznamka'],
+            'cena' => $r['cena'], 'poznamka' => $r['termin_poznamka'],
         ];
         if (email_pripominka($r, $termin)) {
             $odeslano++;

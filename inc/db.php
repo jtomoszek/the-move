@@ -37,6 +37,7 @@ function db(): PDO
             cas_do    TEXT    NOT NULL,              -- HH:MM
             misto     TEXT    NOT NULL,
             typ       TEXT    NOT NULL DEFAULT 'lekce',
+            cena      TEXT    NOT NULL DEFAULT '',
             kapacita  INTEGER NOT NULL DEFAULT 8,
             poznamka  TEXT    NOT NULL DEFAULT '',
             zverejnit INTEGER NOT NULL DEFAULT 1,
@@ -74,6 +75,7 @@ function db(): PDO
         // Stávající termíny zůstanou jako skupinové lekce.
         doplnit_sloupec($pdo, 'terminy', 'typ', "TEXT NOT NULL DEFAULT 'lekce'");
         doplnit_sloupec($pdo, 'terminy', 'adresa', "TEXT NOT NULL DEFAULT ''");
+        doplnit_sloupec($pdo, 'terminy', 'cena', "TEXT NOT NULL DEFAULT ''");
         // 0 = pravidelní účastníci o tomto termínu ještě nedostali e-mail
         doplnit_sloupec($pdo, 'terminy', 'oznameno', 'INTEGER NOT NULL DEFAULT 1');
         doplnit_sloupec($pdo, 'rezervace', 'token', "TEXT NOT NULL DEFAULT ''");

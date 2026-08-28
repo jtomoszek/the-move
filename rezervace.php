@@ -29,7 +29,7 @@ $jePost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 
 if ($token !== '') {
     $s = $pdo->prepare(
-        'SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ, t.poznamka
+        'SELECT r.*, t.datum, t.cas_od, t.cas_do, t.misto, t.adresa, t.typ, t.cena, t.poznamka
          FROM rezervace r JOIN terminy t ON t.id = r.termin_id
          WHERE r.token = :tok'
     );
@@ -148,9 +148,11 @@ function vypis_vyber_lekci(array $lekce): void
                 . '<span>' . h(radek_terminu($l))
                 . '<span class="stav">Obsazeno</span></span></label>';
         } else {
+            $cena = trim((string) ($l['cena'] ?? ''));
             echo '<label class="rez-lekce"><input type="checkbox" name="terminy[]" value="' . (int) $l['id'] . '">'
                 . '<span>' . h(radek_terminu($l))
-                . '<span class="stav">Volno ' . $volno . ' z ' . (int) $l['kapacita'] . '</span></span></label>';
+                . '<span class="stav">Volno ' . $volno . ' z ' . (int) $l['kapacita']
+                . ($cena !== '' ? ' · ' . h($cena) : '') . '</span></span></label>';
         }
     }
     echo '</div>';
@@ -308,6 +310,9 @@ $minula  = $rezervace && $rezervace['datum'] < date('Y-m-d');
         <div class="rez-radek"><dt>Kdy</dt><dd><?= h(radek_terminu($termin)) ?></dd></div>
         <?php if (trim((string) $rezervace['adresa']) !== ''): ?>
           <div class="rez-radek"><dt>Adresa</dt><dd><?= h($rezervace['adresa']) ?></dd></div>
+        <?php endif; ?>
+        <?php if (trim((string) ($rezervace['cena'] ?? '')) !== ''): ?>
+          <div class="rez-radek"><dt>Cena</dt><dd><?= h($rezervace['cena']) ?></dd></div>
         <?php endif; ?>
         <?php if (trim((string) $rezervace['poznamka']) !== ''): ?>
           <div class="rez-radek"><dt>Poznámka</dt><dd><?= h($rezervace['poznamka']) ?></dd></div>

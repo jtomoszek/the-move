@@ -13,7 +13,8 @@
       "typ_nazev": "Skupinová lekce",
       "poznamka": "",
       "kapacita": 8,
-      "volno": 0
+      "volno": 0,
+      "cena": "250 Kč"
     },
     {
       "id": 2,
@@ -26,7 +27,8 @@
       "typ_nazev": "Workshop",
       "poznamka": "Celodenní workshop pro tanečníky",
       "kapacita": 12,
-      "volno": 4
+      "volno": 4,
+      "cena": "1 200 Kč"
     },
     {
       "id": 3,
@@ -39,7 +41,8 @@
       "typ_nazev": "Skupinová lekce",
       "poznamka": "",
       "kapacita": 8,
-      "volno": 2
+      "volno": 2,
+      "cena": "250 Kč"
     },
     {
       "id": 4,
@@ -52,7 +55,8 @@
       "typ_nazev": "Skupinová lekce",
       "poznamka": "",
       "kapacita": 8,
-      "volno": 5
+      "volno": 5,
+      "cena": "250 Kč"
     },
     {
       "id": 5,
@@ -65,7 +69,8 @@
       "typ_nazev": "Seminář",
       "poznamka": "Seminář pro profesionály",
       "kapacita": 14,
-      "volno": 9
+      "volno": 9,
+      "cena": "1 800 Kč"
     },
     {
       "id": 6,
@@ -78,7 +83,8 @@
       "typ_nazev": "Skupinová lekce",
       "poznamka": "Lekce vhodná i pro úplné začátečníky",
       "kapacita": 8,
-      "volno": 8
+      "volno": 8,
+      "cena": "250 Kč"
     },
     {
       "id": 7,
@@ -91,7 +97,8 @@
       "typ_nazev": "Skupinová lekce",
       "poznamka": "",
       "kapacita": 8,
-      "volno": 8
+      "volno": 8,
+      "cena": "250 Kč"
     },
     {
       "id": 8,
@@ -104,7 +111,8 @@
       "typ_nazev": "Workshop",
       "poznamka": "Workshop pro hudebníky",
       "kapacita": 12,
-      "volno": 12
+      "volno": 12,
+      "cena": "1 200 Kč"
     },
     {
       "id": 9,
@@ -117,7 +125,8 @@
       "typ_nazev": "Skupinová lekce",
       "poznamka": "",
       "kapacita": 8,
-      "volno": 6
+      "volno": 6,
+      "cena": "250 Kč"
     }
   ]
 }

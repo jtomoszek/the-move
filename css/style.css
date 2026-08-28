@@ -588,11 +588,24 @@ h1, h2, h3, h4, h5, h6, .h-style {
   line-height: 120%;
 }
 
+.schedule-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
+}
+
 .schedule-free {
   font-size: 13px;
   color: var(--grey);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.schedule-price {
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .schedule-free--low { color: var(--yellow); }

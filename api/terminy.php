@@ -23,7 +23,7 @@ try {
 
 try {
     $stmt = db()->prepare(
-        "SELECT t.id, t.datum, t.cas_od, t.cas_do, t.misto, t.typ, t.kapacita, t.poznamka,
+        "SELECT t.id, t.datum, t.cas_od, t.cas_do, t.misto, t.typ, t.cena, t.kapacita, t.poznamka,
                 (SELECT COUNT(*) FROM rezervace r WHERE r.termin_id = t.id) AS obsazeno
          FROM terminy t
          WHERE t.zverejnit = 1 AND t.datum >= :dnes
@@ -43,6 +43,7 @@ try {
             'misto'    => $row['misto'],
             'typ'      => overeny_typ($row['typ'] ?? null),
             'typ_nazev' => nazev_typu($row['typ'] ?? null),
+            'cena'     => trim((string) ($row['cena'] ?? '')),
             'poznamka' => $row['poznamka'],
             'kapacita' => (int) $row['kapacita'],
             'volno'    => max(0, (int) $row['kapacita'] - (int) $row['obsazeno']),

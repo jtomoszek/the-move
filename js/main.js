@@ -234,7 +234,8 @@
         t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + "</span>" +
         '<span class="schedule-place">' + escapeHtml(t.misto) +
         (t.poznamka ? ' <small class="text-grey">' + escapeHtml(t.poznamka) + "</small>" : "") + "</span>" +
-        free +
+        '<span class="schedule-slot">' + free +
+        (t.cena ? '<span class="schedule-price">' + escapeHtml(t.cena) + "</span>" : "") + "</span>" +
         (t.volno > 0
           ? '<button type="button" class="button" data-book="' + t.id + '">Rezervovat místo</button>'
           : '<a href="#kontakt" class="button" style="opacity:.5">Napsat si o místo</a>');
@@ -306,7 +307,8 @@
     document.body.style.overflow = "hidden";
 
     modal.querySelector(".modal-lesson").textContent =
-      t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + " · " + t.misto;
+      t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + " · " + t.misto +
+      (t.cena ? " · " + t.cena : "");
     modal.querySelector('[name="termin_id"]').value = t.id;
 
     var form = modal.querySelector(".booking-form");

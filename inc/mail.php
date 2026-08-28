@@ -143,7 +143,18 @@ function odkaz_trvale(string $token): string
 function termin_textem(array $t): string
 {
     return datum_slovy($t['datum']) . ' ' . date('Y', (int) strtotime($t['datum']))
-        . ', ' . $t['cas_od'] . ' do ' . $t['cas_do'] . ' · ' . $t['misto'];
+        . ', ' . $t['cas_od'] . ' do ' . $t['cas_do'] . ' · ' . $t['misto']
+        . (trim((string) ($t['cena'] ?? '')) !== '' ? ' · ' . $t['cena'] : '');
+}
+
+/** Čas, místo a případná cena termínu — druhý sloupec řádku v HTML seznamu. */
+function termin_radek_html(array $t): string
+{
+    return htmlspecialchars(
+        $t['cas_od'] . ' do ' . $t['cas_do'] . ' · ' . $t['misto']
+        . (trim((string) ($t['cena'] ?? '')) !== '' ? ' · ' . $t['cena'] : ''),
+        ENT_QUOTES, 'UTF-8'
+    );
 }
 
 /** Potvrzení přihlášky na konkrétní termín. */
@@ -192,6 +203,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         'podnadpis_akce'   => $podnadpis,
         'kdy'              => $kdy,
         'kde'              => $kde,
+        'cena'             => trim((string) ($termin['cena'] ?? '')),
         'poznamka'         => (string) ($termin['poznamka'] ?? ''),
         'na_jmeno'         => $rezervace['jmeno'],
         'cislo_rezervace'  => 'R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT),
@@ -203,6 +215,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         'detail'     => true,
         'seznam'     => false,
         'perex2'     => $perex2 !== '',
+        'cena'       => trim((string) ($termin['cena'] ?? '')) !== '',
         'poznamka'   => trim((string) ($termin['poznamka'] ?? '')) !== '',
         'pravidelne' => $jePravidelna,
     ]);
@@ -214,6 +227,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         . $nazev . "\n" . $podnadpis . "\n\n"
         . 'Kdy: ' . $kdy . "\n"
         . 'Kde: ' . $kde . "\n"
+        . (trim((string) ($termin['cena'] ?? '')) !== '' ? 'Cena: ' . $termin['cena'] . "\n" : '')
         . (trim((string) ($termin['poznamka'] ?? '')) !== '' ? 'Poznámka: ' . $termin['poznamka'] . "\n" : '')
         . 'Na jméno: ' . $rezervace['jmeno'] . "\n"
         . 'Rezervace: #R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT) . "\n\n"
@@ -242,7 +256,7 @@ function email_pravidelne(array $prihlaska, array $rezervace): bool
             . '<td width="180" valign="top" style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;mso-line-height-rule:exactly;color:#999999;">'
             . htmlspecialchars(datum_slovy($r['datum']), ENT_QUOTES, 'UTF-8') . '</td>'
             . '<td valign="top" style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:22px;mso-line-height-rule:exactly;color:#111111;">'
-            . htmlspecialchars($r['cas_od'] . ' do ' . $r['cas_do'] . ' · ' . $r['misto'], ENT_QUOTES, 'UTF-8')
+            . termin_radek_html($r)
             . '<br><a href="' . htmlspecialchars($zrusit, ENT_QUOTES, 'UTF-8')
             . '" style="font-size:13px;color:#999999;text-decoration:underline;">Nemůžu tento termín</a>'
             . '</td></tr>';
@@ -299,7 +313,7 @@ function email_nove_terminy(array $prihlaska, array $terminy): bool
             . '<td width="180" valign="top" style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;mso-line-height-rule:exactly;color:#999999;">'
             . htmlspecialchars(datum_slovy($t['datum']), ENT_QUOTES, 'UTF-8') . '</td>'
             . '<td valign="top" style="padding:14px 0;border-top:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:22px;mso-line-height-rule:exactly;color:#111111;">'
-            . htmlspecialchars($t['cas_od'] . ' do ' . $t['cas_do'] . ' · ' . $t['misto'], ENT_QUOTES, 'UTF-8')
+            . termin_radek_html($t)
             . '</td></tr>';
         $seznamText .= '- ' . termin_textem($t) . "\n";
     }
@@ -393,6 +407,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         'podnadpis_akce'   => ($minut > 0 ? $minut . ' min · ' : '') . MAIL_LEKTORKA,
         'kdy'              => $kdy,
         'kde'              => $kde,
+        'cena'             => trim((string) ($termin['cena'] ?? '')),
         'poznamka'         => (string) ($termin['poznamka'] ?? ''),
         'na_jmeno'         => $rezervace['jmeno'],
         'cislo_rezervace'  => 'R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT),
@@ -403,6 +418,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         'detail'     => true,
         'seznam'     => false,
         'perex2'     => $perex2 !== '',
+        'cena'       => trim((string) ($termin['cena'] ?? '')) !== '',
         'poznamka'   => trim((string) ($termin['poznamka'] ?? '')) !== '',
         'pravidelne' => false,
     ]);
@@ -413,6 +429,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         . "\n" . $nazev . "\n\n"
         . 'Kdy: ' . $kdy . "\n"
         . 'Kde: ' . $kde . "\n"
+        . (trim((string) ($termin['cena'] ?? '')) !== '' ? 'Cena: ' . $termin['cena'] . "\n" : '')
         . (trim((string) ($termin['poznamka'] ?? '')) !== '' ? 'Poznámka: ' . $termin['poznamka'] . "\n" : '')
         . 'Rezervace: #R-' . str_pad((string) $rezervace['id'], 5, '0', STR_PAD_LEFT) . "\n\n"
         . 'Přidat do kalendáře: ' . zakladni_url() . '/api/kalendar.php?k=' . $rezervace['token'] . "\n"

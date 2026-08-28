@@ -429,8 +429,14 @@ details[open] summary::before { content:"− "; }
       <div class="grid">
         <div class="pole" style="grid-column:span 3"><label>Adresa (nepovinné, jde do e-mailu)</label>
           <input type="text" name="adresa" value="<?= e($editTermin['adresa'] ?? '') ?>"></div>
-        <div class="pole"><label>Cena (např. 250 Kč)</label>
-          <input type="text" name="cena" value="<?= e($editTermin['cena'] ?? '') ?>"></div>
+        <div class="pole"><label>Cena</label>
+          <?php
+          // U nové události je cena předvyplněná podle druhu; při přepnutí
+          // druhu ji přepíše skript níže (vlastní ceny se nedotkne).
+          $cenaHodnota = $editTermin ? (string) $editTermin['cena'] : '200 Kč';
+          ?>
+          <input type="text" name="cena" value="<?= e($cenaHodnota) ?>"
+                 data-vychozi='{"lekce":"200 Kč","workshop":"600 Kč","seminar":""}'></div>
       </div>
       <div class="grid">
         <div class="pole" style="grid-column:span 4"><label>Poznámka (nepovinné, jde do e-mailů a na web)</label>
@@ -614,11 +620,27 @@ document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
   if (!typ || !poznamka) { return; }
   var vychozi = poznamka.dataset.vychoziLekce || '';
 
+  var cena = document.querySelector('input[name=cena]');
+  var vychoziCeny = cena ? JSON.parse(cena.dataset.vychozi || '{}') : {};
+
   typ.addEventListener('change', function () {
     if (typ.value === 'lekce' && poznamka.value.trim() === '') {
       poznamka.value = vychozi;
     } else if (typ.value !== 'lekce' && poznamka.value.trim() === vychozi.trim()) {
       poznamka.value = '';
+    }
+
+    // Cenu přepíšeme jen tehdy, když je prázdná nebo rovná některé výchozí —
+    // ručně napsanou cenu přepínání druhů nemění.
+    if (cena) {
+      var hodnota = cena.value.trim();
+      var jeVychozi = hodnota === '';
+      for (var k in vychoziCeny) {
+        if (hodnota === vychoziCeny[k]) { jeVychozi = true; }
+      }
+      if (jeVychozi) {
+        cena.value = vychoziCeny[typ.value] || '';
+      }
     }
   });
 })();

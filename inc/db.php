@@ -40,6 +40,7 @@ function db(): PDO
             kapacita  INTEGER NOT NULL DEFAULT 8,
             poznamka  TEXT    NOT NULL DEFAULT '',
             zverejnit INTEGER NOT NULL DEFAULT 1,
+            oznameno  INTEGER NOT NULL DEFAULT 1,
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
 
@@ -53,6 +54,7 @@ function db(): PDO
             token     TEXT    NOT NULL DEFAULT '',
             zdroj     TEXT    NOT NULL DEFAULT 'web',
             oznameno  INTEGER NOT NULL DEFAULT 1,
+            pripominka INTEGER NOT NULL DEFAULT 0,
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
 
@@ -72,10 +74,14 @@ function db(): PDO
         // Stávající termíny zůstanou jako skupinové lekce.
         doplnit_sloupec($pdo, 'terminy', 'typ', "TEXT NOT NULL DEFAULT 'lekce'");
         doplnit_sloupec($pdo, 'terminy', 'adresa', "TEXT NOT NULL DEFAULT ''");
+        // 0 = pravidelní účastníci o tomto termínu ještě nedostali e-mail
+        doplnit_sloupec($pdo, 'terminy', 'oznameno', 'INTEGER NOT NULL DEFAULT 1');
         doplnit_sloupec($pdo, 'rezervace', 'token', "TEXT NOT NULL DEFAULT ''");
         doplnit_sloupec($pdo, 'rezervace', 'zdroj', "TEXT NOT NULL DEFAULT 'web'");
-        // 0 = čeká na souhrnný e-mail o nových termínech
+        // 0 = čeká na souhrnný e-mail o nových termínech (už se nepoužívá)
         doplnit_sloupec($pdo, 'rezervace', 'oznameno', 'INTEGER NOT NULL DEFAULT 1');
+        // 0 = den před akcí se má poslat připomínkový e-mail
+        doplnit_sloupec($pdo, 'rezervace', 'pripominka', 'INTEGER NOT NULL DEFAULT 0');
 
         // Rezervace založené před zavedením e-mailů token nemají; bez něj by
         // odkaz na zrušení v případném pozdějším e-mailu nefungoval.

@@ -11,10 +11,12 @@ require __DIR__ . '/../inc/rezervace.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-// Při návštěvě webu se cestou rozešlou souhrny o nových termínech, kterým
-// už uplynula čekací doba. Případná chyba nesmí shodit výpis termínů.
+// Při návštěvě webu se cestou rozešlou oznámení o nových termínech (po
+// uplynutí čekací doby) a připomínky den před akcí. Případná chyba nesmí
+// shodit výpis termínů.
 try {
     odesli_cekajici_souhrny(db());
+    odesli_pripominky(db());
 } catch (Throwable $e) {
     // ticho, e-maily se doručí při příštím načtení
 }

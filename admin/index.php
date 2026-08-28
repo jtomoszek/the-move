@@ -130,14 +130,14 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         if (!$okDatum || !$okCas || $misto === '') {
             $chyba = 'Vyplňte prosím datum, časy a místo konání.';
         } elseif ($akce === 'pridat') {
-            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, kapacita, poznamka, zverejnit)
-                                VALUES (:d, :od, :do, :m, :a, :typ, :k, :p, :z)');
+            // Nová skupinová lekce čeká na oznámení pravidelným účastníkům
+            // (oznameno = 0); u workshopu a semináře se nic neoznamuje.
+            $s = $pdo->prepare('INSERT INTO terminy (datum, cas_od, cas_do, misto, adresa, typ, kapacita, poznamka, zverejnit, oznameno)
+                                VALUES (:d, :od, :do, :m, :a, :typ, :k, :p, :z, :ozn)');
             $s->execute([':d' => $datum, ':od' => $casOd, ':do' => $casDo, ':m' => $misto, ':a' => $adresa,
-                         ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit]);
-
-            // Na novou skupinovou lekci rovnou přihlásíme ty, kdo chodí pravidelně.
-            $pridano = doplnit_trvale_na_termin($pdo, (int) $pdo->lastInsertId());
-            presmeruj('?ok=pridano' . ($pridano > 0 ? '&trvale=' . $pridano : ''));
+                         ':typ' => $typ, ':k' => $kapacita, ':p' => $poznamka, ':z' => $zverejnit,
+                         ':ozn' => $typ === 'lekce' ? 0 : 1]);
+            presmeruj('?ok=pridano');
         } else {
             $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m, adresa=:a,
                                 typ=:typ, kapacita=:k, poznamka=:p, zverejnit=:z WHERE id=:id');
@@ -224,14 +224,11 @@ if ($prihlasen) {
         'SELECT * FROM trvale_prihlasky WHERE aktivni = 1 ORDER BY jmeno COLLATE NOCASE'
     )->fetchAll();
 
-    // Souhrny o nových termínech čekají, než lektorka dovypisuje ostatní.
-    $cekajici = cekajici_souhrny($pdo);
+    // Oznámení o nových termínech čeká, než lektorka dovypisuje ostatní.
+    $cekajici = cekajici_terminy($pdo);
     $odejdeV = '';
-    foreach ($cekajici as $s) {
-        $cas = strtotime($s['posledni'] . ' UTC') + PAUZA_SOUHRNU * 60;
-        if ($odejdeV === '' || $cas < strtotime($odejdeV)) {
-            $odejdeV = date('Y-m-d H:i:s', $cas);
-        }
+    if ($cekajici['terminy'] && $cekajici['posledni'] !== '') {
+        $odejdeV = date('Y-m-d H:i:s', strtotime($cekajici['posledni'] . ' UTC') + PAUZA_SOUHRNU * 60);
     }
 }
 
@@ -241,21 +238,18 @@ $okZpravy = [
     'smazano' => 'Termín byl smazán včetně rezervací.',
     'rezervace_smazana' => 'Rezervace byla odstraněna.',
     'rezervace_pridana' => 'Rezervace byla přidána.',
-    'trvala_zrusena' => 'Pravidelná docházka byla vypnuta.',
-    'souhrny' => 'Souhrny byly rozeslány.',
+    'trvala_zrusena' => 'Odběr novinek byl vypnut.',
+    'souhrny' => 'Oznámení byla rozeslána.',
 ];
 if (isset($_GET['ok'], $okZpravy[$_GET['ok']])) {
     $zprava = $okZpravy[$_GET['ok']];
 }
-if (isset($_GET['trvale']) && (int) $_GET['trvale'] > 0) {
-    $pocet = (int) $_GET['trvale'];
-    $zprava .= ' Automaticky jsme přihlásili ' . $pocet
-        . ($pocet === 1 ? ' pravidelného účastníka' : ($pocet < 5 ? ' pravidelné účastníky' : ' pravidelných účastníků'))
-        . '; souhrn jim odejde, až dovypisujete zbylé termíny.';
-}
 if (isset($_GET['pocet'])) {
-    $zprava = 'Odeslali jsme ' . (int) $_GET['pocet']
-        . ((int) $_GET['pocet'] === 1 ? ' souhrn.' : ((int) $_GET['pocet'] < 5 ? ' souhrny.' : ' souhrnů.'));
+    $pocet = (int) $_GET['pocet'];
+    $zprava = $pocet === 0
+        ? 'Nebylo co rozesílat — nikdo zatím neodebírá novinky, nebo žádné termíny nečekají.'
+        : 'Poslali jsme oznámení o nových termínech ' . $pocet
+          . ($pocet === 1 ? ' účastníkovi.' : ($pocet < 5 ? ' účastníkům.' : ' účastníkům.'));
 }
 
 $csrf = csrf_token();
@@ -282,10 +276,11 @@ a { color:inherit; }
 .card h2 { margin-bottom:1.5rem; padding-top:.75rem; position:relative; }
 .card h2::before { content:""; position:absolute; top:0; left:0; width:2.25rem; height:2px; background:var(--yellow); }
 label { display:block; font-size:12px; letter-spacing:.5px; text-transform:uppercase; margin-bottom:.35rem; }
-input[type=text],input[type=password],input[type=email],input[type=date],input[type=time],input[type=number],select {
+input[type=text],input[type=password],input[type=email],input[type=date],input[type=time],input[type=number],select,textarea {
   width:100%; font-family:inherit; font-size:.9375rem; padding:.6rem .75rem;
   border:1px solid var(--line); background:var(--paper); border-radius:0; }
-input:focus,select:focus { outline:none; border-color:var(--yellow); }
+textarea { resize:vertical; line-height:1.5; }
+input:focus,select:focus,textarea:focus { outline:none; border-color:var(--yellow); }
 .grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); margin-bottom:1.25rem; }
 .pole { min-width:0; }
 .btn { display:inline-flex; align-items:center; gap:.5rem; font-family:"Roboto Mono",monospace; font-size:13px;
@@ -431,10 +426,20 @@ details[open] summary::before { content:"− "; }
           <input type="text" name="misto" required value="<?= e($editTermin['misto'] ?? 'Ostrava-Poruba · Poklad') ?>"></div>
       </div>
       <div class="grid">
-        <div class="pole" style="grid-column:span 2"><label>Adresa (nepovinné, jde do e-mailu)</label>
+        <div class="pole" style="grid-column:span 4"><label>Adresa (nepovinné, jde do e-mailu)</label>
           <input type="text" name="adresa" value="<?= e($editTermin['adresa'] ?? '') ?>"></div>
-        <div class="pole" style="grid-column:span 2"><label>Poznámka (nepovinné)</label>
-          <input type="text" name="poznamka" value="<?= e($editTermin['poznamka'] ?? '') ?>"></div>
+      </div>
+      <div class="grid">
+        <div class="pole" style="grid-column:span 4"><label>Poznámka (nepovinné, jde do e-mailů a na web)</label>
+          <?php
+          // U nové skupinové lekce je poznámka předvyplněná popisem cesty;
+          // u workshopu a semináře se pole vyprázdní (hlídá skript níže).
+          $poznamkaVychozi = 'Lekce probíhají ve cvičebním sále v prvním patře DK Poklad. '
+              . 'Ze vstupní haly půjdete vpravo po schodech nahoru - šatny i sál jsou potom v levé části. '
+              . 'V kulturním domě funguje u vstupu recepce, tam Vás případně nasměrují.';
+          $poznamkaHodnota = $editTermin ? (string) $editTermin['poznamka'] : $poznamkaVychozi;
+          ?>
+          <textarea name="poznamka" rows="3" data-vychozi-lekce="<?= e($poznamkaVychozi) ?>"><?= e($poznamkaHodnota) ?></textarea></div>
       </div>
       <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
         <label class="prepinac" style="margin:0">
@@ -449,28 +454,30 @@ details[open] summary::before { content:"− "; }
 
   <div class="card" id="pravidelni">
     <h2>Chodí pravidelně</h2>
+
+    <?php if ($cekajici['terminy']): ?>
+      <div class="hlaska" style="margin-bottom:1.25rem">
+        O <strong><?= count($cekajici['terminy']) ?></strong>
+        <?= count($cekajici['terminy']) === 1 ? 'novém termínu' : 'nových termínech' ?>
+        ještě nikdo nedostal e-mail
+        <?php if ($odejdeV !== ''): ?>· odejde v <?= e(date('H:i', strtotime($odejdeV))) ?><?php endif; ?>
+        <form method="post" style="display:inline;margin-left:.75rem">
+          <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+          <input type="hidden" name="akce" value="odeslat_souhrny">
+          <button class="btn btn--mini" type="submit">Odeslat hned</button>
+        </form>
+      </div>
+    <?php endif; ?>
+
     <?php if (!$pravidelni): ?>
       <p class="text-grey" style="margin:0">Zatím nikdo. Kdo si v potvrzovacím e-mailu klikne na
-        „Chodit na lekce pravidelně“, objeví se tady a na každou novou skupinovou lekci
-        ho systém přihlásí sám.</p>
+        „Chodit na lekce pravidelně“, vybere si termíny a objeví se tady. O každé nově
+        vypsané skupinové lekci pak dostane e-mail s výběrem termínů.</p>
     <?php else: ?>
-      <p class="text-grey" style="margin:0 0 1.25rem">Tito lidé se automaticky přihlašují na každou
-        nově vypsanou skupinovou lekci. Souhrn s novými termíny jim odejde
+      <p class="text-grey" style="margin:0 0 1.25rem">Tito lidé dostávají e-mail, kdykoli vypíšete
+        nové skupinové lekce, a vybírají si z nich termíny. Oznámení odejde
         <?= (int) PAUZA_SOUHRNU ?> minut po posledním vypsaném termínu, aby dostali jeden e-mail
-        místo deseti.</p>
-
-      <?php if ($cekajici): ?>
-        <div class="hlaska" style="margin-bottom:1.25rem">
-          Čeká na rozeslání: <strong><?= count($cekajici) ?></strong>
-          <?= count($cekajici) === 1 ? 'souhrn' : (count($cekajici) < 5 ? 'souhrny' : 'souhrnů') ?>
-          <?php if ($odejdeV !== ''): ?>· odejde v <?= e(date('H:i', strtotime($odejdeV))) ?><?php endif; ?>
-          <form method="post" style="display:inline;margin-left:.75rem">
-            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-            <input type="hidden" name="akce" value="odeslat_souhrny">
-            <button class="btn btn--mini" type="submit">Odeslat hned</button>
-          </form>
-        </div>
-      <?php endif; ?>
+        se všemi najednou — nebo ho pošlete hned tlačítkem výše.</p>
       <?php foreach ($pravidelni as $p): ?>
         <div class="termin-hlava" style="padding:1rem 0;border-top:1px solid var(--line)">
           <div>
@@ -594,6 +601,24 @@ document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
 
   btn.addEventListener('blur', function () { if (nabito) { setTimeout(reset, 200); } });
 });
+
+/* Poznámka s popisem cesty patří jen ke skupinovým lekcím: při přepnutí druhu
+   na workshop/seminář se předvyplněný text uklidí, při návratu zase doplní.
+   Vlastního textu se skript nedotkne. */
+(function () {
+  var typ = document.querySelector('select[name=typ]');
+  var poznamka = document.querySelector('textarea[name=poznamka]');
+  if (!typ || !poznamka) { return; }
+  var vychozi = poznamka.dataset.vychoziLekce || '';
+
+  typ.addEventListener('change', function () {
+    if (typ.value === 'lekce' && poznamka.value.trim() === '') {
+      poznamka.value = vychozi;
+    } else if (typ.value !== 'lekce' && poznamka.value.trim() === vychozi.trim()) {
+      poznamka.value = '';
+    }
+  });
+})();
 </script>
 </body>
 </html>

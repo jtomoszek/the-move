@@ -131,6 +131,7 @@
   var scheduleList = document.getElementById("schedule-list");
   var scheduleFilters = document.getElementById("schedule-filters");
   var scheduleMoreBtn = document.getElementById("schedule-vice");
+  var scheduleLessBtn = document.getElementById("schedule-mene");
   var modal = document.getElementById("booking-modal");
 
   // Náhled na GitHub Pages: statický hosting bez PHP, ukázková data,
@@ -209,6 +210,7 @@
         : '<p class="schedule-loading text-grey">Momentálně nevypisujeme žádné termíny. ' +
           'Napište nám a dáme vám vědět o nejbližší lekci.</p>';
       if (scheduleMoreBtn) { scheduleMoreBtn.hidden = true; }
+      if (scheduleLessBtn) { scheduleLessBtn.hidden = true; }
       return;
     }
 
@@ -256,6 +258,11 @@
         ? "Další termíny (" + zbyva + ")"
         : "Další termíny";
     }
+
+    // Sbalit jde, jakmile je rozbaleno víc než základních pět.
+    if (scheduleLessBtn) {
+      scheduleLessBtn.hidden = zobrazeno <= KROK_TERMINU;
+    }
   }
 
   if (scheduleMoreBtn) {
@@ -266,6 +273,17 @@
       var nove = scheduleList.children[zobrazeno - KROK_TERMINU];
       if (nove && nove.scrollIntoView) {
         nove.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    });
+  }
+
+  if (scheduleLessBtn) {
+    scheduleLessBtn.addEventListener("click", function () {
+      zobrazeno = KROK_TERMINU;
+      renderSchedule();
+      // Po sbalení skočíme na začátek výpisu, ať uživatel nezůstane v prázdnu.
+      if (scheduleList.scrollIntoView) {
+        scheduleList.scrollIntoView({ block: "start", behavior: "smooth" });
       }
     });
   }

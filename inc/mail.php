@@ -49,7 +49,8 @@ function sablona_zprava(array $promenne, array $bloky = []): string
     }
 
     // Bloky, o kterých volající nerozhodl, se z šablony odstraní.
-    $html = (string) preg_replace('~<!--\{\{#[a-z_]+\}\}-->.*?<!--\{\{/[a-z_]+\}\}-->~s', '', $html);
+    // Název bloku může obsahovat i číslici (perex2), jinak by blok zůstal.
+    $html = (string) preg_replace('~<!--\{\{#[a-z0-9_]+\}\}-->.*?<!--\{\{/[a-z0-9_]+\}\}-->~s', '', $html);
 
     $nahrady = [];
     foreach ($promenne as $klic => $hodnota) {
@@ -57,8 +58,10 @@ function sablona_zprava(array $promenne, array $bloky = []): string
             ? (string) $hodnota
             : htmlspecialchars((string) $hodnota, ENT_QUOTES, 'UTF-8');
     }
+    $html = strtr($html, $nahrady);
 
-    return strtr($html, $nahrady);
+    // Pojistka: co se nenahradilo, ať se aspoň nezobrazí příjemci.
+    return (string) preg_replace('~\{\{[a-z0-9_]+\}\}~', '', $html);
 }
 
 /** Hlavička s diakritikou (jméno odesílatele, předmět). */
@@ -94,7 +97,9 @@ function posli_mail(string $komu, string $jmeno, string $predmet, string $html, 
     if (strpos(zakladni_url(), 'localhost') !== false || strpos(zakladni_url(), '127.0.0.1') !== false) {
         $dir = __DIR__ . '/../data/maily';
         if (!is_dir($dir)) { mkdir($dir, 0775, true); }
-        $zaklad = $dir . '/' . date('Ymd-His') . '-' . preg_replace('~[^a-z0-9]+~i', '-', $komu);
+        // Do názvu i mikrosekundy — několik e-mailů v jedné sekundě se jinak přepíše.
+        $zaklad = $dir . '/' . date('Ymd-His') . '-' . substr((string) hrtime(true), -6)
+            . '-' . preg_replace('~[^a-z0-9]+~i', '-', $komu);
         file_put_contents($zaklad . '.html', $html);
         file_put_contents($zaklad . '.txt', "Komu: {$jmeno} <{$komu}>\nPředmět: {$predmet}\n\n" . $text);
         return true;

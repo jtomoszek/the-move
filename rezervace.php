@@ -158,7 +158,8 @@ $minula  = $rezervace && $rezervace['datum'] < date('Y-m-d');
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <?php // Otisk obsahu: po úpravě stylů si prohlížeč načte novou verzi. ?>
+  <link rel="stylesheet" href="css/style.css?v=<?= substr(md5_file(__DIR__ . '/css/style.css') ?: '', 0, 8) ?>">
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
   <style>
     .rez-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 1.5rem; background: var(--paper-soft); }

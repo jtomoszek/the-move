@@ -383,8 +383,9 @@
         submit.disabled = false;
         bookingForm.hidden = true;
         var previewSuccess = modal.querySelector(".booking-success");
-        previewSuccess.querySelector("p").textContent =
+        previewSuccess.querySelector(".booking-success-zprava").textContent =
           "Toto je náhled webu, rezervace se zatím neukládají. Na ostrém webu by teď bylo místo rezervované.";
+        previewSuccess.querySelector(".booking-mail").hidden = true;
         previewSuccess.hidden = false;
         return;
       }
@@ -400,7 +401,16 @@
           if (data && data.ok) {
             bookingForm.hidden = true;
             var success = modal.querySelector(".booking-success");
-            success.querySelector("p").textContent = data.zprava;
+            success.querySelector(".booking-success-zprava").textContent = data.zprava;
+
+            // Lidem uniká, že jim potvrzení přišlo e-mailem — řekneme to natvrdo.
+            // Když se e-mail odeslat nepodařilo, do schránky je neposíláme.
+            var mailBox = success.querySelector(".booking-mail");
+            if (mailBox) {
+              mailBox.querySelector(".booking-mail-adresa").textContent = payload.email;
+              mailBox.hidden = !data.mail;
+            }
+
             success.hidden = false;
             // obnov počty volných míst
             fetch(scheduleList.dataset.api, { cache: "no-store" })

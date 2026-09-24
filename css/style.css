@@ -950,6 +950,13 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .form-note { font-size: 0.75rem; color: var(--grey); }
 
+.form-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--grey);
+}
+
 @media screen and (max-width: 991px) {
   .contact-grid { grid-template-columns: 1fr; }
 }
@@ -1049,9 +1056,33 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .booking-success[hidden],
 .booking-form[hidden] { display: none; }
 
-.booking-success p {
+.booking-success > p {
   border-left: 3px solid var(--yellow);
   padding-left: 1.25rem;
+}
+
+/* Výzva, ať se člověk podívá do e-mailu — jinak mu potvrzení unikne. */
+.booking-mail {
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  padding: 1.25rem 1.5rem;
+}
+
+.booking-mail[hidden] { display: none; }
+
+.booking-mail p { margin: 0; font-size: 0.875rem; line-height: 165%; }
+.booking-mail p + p { margin-top: 0.7rem; }
+
+.booking-mail p.booking-mail-nadpis {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.booking-mail p.booking-mail-spam {
+  color: var(--grey);
+  font-size: 0.75rem;
 }
 
 .booking-success .button { align-self: flex-start; }

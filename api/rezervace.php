@@ -59,10 +59,11 @@ try {
     $termin = $vysledek['termin'];
     $volno = (int) $termin['kapacita'] - (int) $termin['obsazeno'] - 1;
     $zprava = $odeslano
-        ? 'Děkujeme! Vaše místo je rezervované, potvrzení jsme vám poslali e-mailem.'
+        ? 'Děkujeme, vaše místo je rezervované.'
         : 'Děkujeme! Vaše místo je rezervované, brzy se vám ozveme.';
 
-    odpoved(true, $zprava, 200, ['volno' => $volno]);
+    // Podle „mail" se na webu ukáže výzva, ať se člověk podívá do schránky.
+    odpoved(true, $zprava, 200, ['volno' => $volno, 'mail' => $odeslano]);
 } catch (Throwable $e) {
     odpoved(false, 'Rezervaci se nepodařilo uložit, zkuste to prosím znovu.', 500);
 }

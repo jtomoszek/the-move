@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mail.php';
+require_once __DIR__ . '/klienti.php';
 
 /**
  * Vytvoří rezervaci na termín. Hlídá kapacitu i dvojí přihlášení.
@@ -15,7 +16,8 @@ require_once __DIR__ . '/mail.php';
  * @return array{ok:bool,chyba:string,kod:int,rezervace:?array,termin:?array}
  */
 function vytvor_rezervaci(PDO $pdo, int $terminId, string $jmeno, string $email,
-                          string $telefon = '', string $zdroj = 'web'): array
+                          string $telefon = '', string $zdroj = 'web',
+                          ?bool $novinky = null): array
 {
     $chyba = function (string $zprava, int $kod): array {
         return ['ok' => false, 'chyba' => $zprava, 'kod' => $kod, 'rezervace' => null, 'termin' => null];
@@ -64,6 +66,9 @@ function vytvor_rezervaci(PDO $pdo, int $terminId, string $jmeno, string $email,
     $id = (int) $pdo->lastInsertId();
     $pdo->commit();
 
+    // Kartotéka klientů se plní sama z rezervací.
+    $klient = zapis_klienta($pdo, $jmeno, $email, $telefon, $novinky);
+
     return [
         'ok'    => true,
         'chyba' => '',
@@ -71,6 +76,7 @@ function vytvor_rezervaci(PDO $pdo, int $terminId, string $jmeno, string $email,
         'rezervace' => ['id' => $id, 'jmeno' => $jmeno, 'email' => $email,
                         'telefon' => $telefon, 'token' => $token, 'pozdni' => $pozdni],
         'termin' => $termin,
+        'klient' => $klient,
     ];
 }
 

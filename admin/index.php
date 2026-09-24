@@ -180,6 +180,11 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
                                 VALUES (:t, :j, :e, :tel, :tok, \'rucne\')');
             $s->execute([':t' => $terminId, ':j' => $jmeno, ':e' => $email,
                          ':tel' => $telefon, ':tok' => novy_token()]);
+
+            // Ať se i ručně přidaný účastník objeví v kartotéce.
+            if ($email !== '') {
+                zapis_klienta($pdo, $jmeno, $email, $telefon);
+            }
         }
         presmeruj('?ok=rezervace_pridana#t' . $terminId);
     }
@@ -267,66 +272,7 @@ $csrf = csrf_token();
 <title>Administrace · The Move</title>
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root { --ink:#111; --paper:#fff; --soft:#fafafa; --grey:#999; --line:#e6e6e6; --yellow:#f2af0e; }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:"Roboto Mono",monospace; font-size:.9375rem; line-height:160%; color:var(--ink); background:var(--soft); }
-h1,h2,h3 { font-family:"General Sans",sans-serif; font-weight:400; letter-spacing:1px; text-transform:uppercase; line-height:120%; }
-a { color:inherit; }
-.wrap { max-width:64rem; margin:0 auto; padding:2rem 1.25rem 5rem; }
-.topbar { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:1.25rem 0 2rem; flex-wrap:wrap; }
-.logo { height:24px; }
-.card { background:var(--paper); border:1px solid var(--line); padding:2rem; margin-bottom:2rem; }
-.card h2 { margin-bottom:1.5rem; padding-top:.75rem; position:relative; }
-.card h2::before { content:""; position:absolute; top:0; left:0; width:2.25rem; height:2px; background:var(--yellow); }
-label { display:block; font-size:12px; letter-spacing:.5px; text-transform:uppercase; margin-bottom:.35rem; }
-input[type=text],input[type=password],input[type=email],input[type=date],input[type=time],input[type=number],select,textarea {
-  width:100%; font-family:inherit; font-size:.9375rem; padding:.6rem .75rem;
-  border:1px solid var(--line); background:var(--paper); border-radius:0; }
-textarea { resize:vertical; line-height:1.5; }
-input:focus,select:focus,textarea:focus { outline:none; border-color:var(--yellow); }
-.grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr)); margin-bottom:1.25rem; }
-.pole { min-width:0; }
-.btn { display:inline-flex; align-items:center; gap:.5rem; font-family:"Roboto Mono",monospace; font-size:13px;
-  letter-spacing:.5px; text-transform:uppercase; border:1px solid var(--ink); border-radius:500px;
-  background:var(--ink); color:var(--paper); padding:.65rem 1.15rem; cursor:pointer; transition:.2s; text-decoration:none; }
-.btn:hover { background:var(--yellow); border-color:var(--yellow); color:var(--ink); }
-.btn--ghost { background:transparent; color:var(--ink); }
-.btn--ghost:hover { background:var(--ink); color:var(--paper); }
-.btn--mini { padding:.35rem .75rem; font-size:11px; }
-.btn--potvrdit { background:#d0342c; border-color:#d0342c; color:var(--paper); }
-.btn--potvrdit:hover { background:#b02b24; border-color:#b02b24; color:var(--paper); }
-.hlaska { padding:1rem 1.25rem; margin-bottom:1.5rem; border-left:3px solid var(--yellow); background:var(--paper); }
-.hlaska--chyba { border-left-color:#d0342c; }
-.termin { background:var(--paper); border:1px solid var(--line); margin-bottom:1rem; }
-.termin[data-minuly="1"] { opacity:.55; }
-.termin-hlava { display:flex; flex-wrap:wrap; gap:.75rem 1.5rem; align-items:center; padding:1.15rem 1.5rem; }
-.termin-kdy { font-family:"General Sans",sans-serif; text-transform:uppercase; letter-spacing:1px; font-size:1.05rem; }
-.termin-misto { color:var(--grey); font-size:.8125rem; text-transform:uppercase; letter-spacing:.5px; }
-.badge { font-size:12px; letter-spacing:.5px; text-transform:uppercase; padding:.25rem .7rem; border:1px solid var(--line); border-radius:500px; }
-.badge--volno { border-color:var(--yellow); }
-.badge--plno { background:var(--ink); color:var(--paper); border-color:var(--ink); }
-.badge--skryty { border-style:dashed; color:var(--grey); }
-.badge--typ { background:var(--yellow); border-color:var(--yellow); color:var(--ink); }
-.text-grey { color:var(--grey); font-size:.875rem; line-height:170%; }
-.termin-akce { margin-left:auto; display:flex; gap:.5rem; flex-wrap:wrap; }
-details { border-top:1px solid var(--line); }
-summary { cursor:pointer; padding:.85rem 1.5rem; font-size:12px; letter-spacing:.5px; text-transform:uppercase; color:var(--grey); list-style:none; }
-summary::before { content:"+ "; color:var(--yellow); }
-details[open] summary::before { content:"− "; }
-.ucastnici { padding:0 1.5rem 1.25rem; }
-.ucastnik { display:flex; flex-wrap:wrap; gap:.5rem 1.5rem; align-items:center; padding:.6rem 0; border-bottom:1px dashed var(--line); font-size:.8125rem; }
-.ucastnik span:first-child { font-weight:500; min-width:12rem; }
-.ucastnik .mail, .ucastnik .tel { color:var(--grey); }
-.ucastnik form { margin-left:auto; }
-.mini-form { display:flex; flex-wrap:wrap; gap:.75rem; align-items:flex-end; padding-top:1rem; }
-.mini-form .pole { flex:1 1 10rem; }
-.zapati { color:var(--grey); font-size:12px; margin-top:3rem; }
-.login { max-width:26rem; margin:14vh auto 0; }
-.prepinac { display:flex; align-items:center; gap:.6rem; font-size:13px; text-transform:uppercase; letter-spacing:.5px; }
-.prepinac input { width:auto; }
-@media (max-width:600px){ .card{padding:1.25rem} .termin-hlava{padding:1rem} .ucastnici{padding:0 1rem 1rem} }
-</style>
+<link rel="stylesheet" href="admin.css?v=<?= substr(md5_file(__DIR__ . '/admin.css') ?: '', 0, 8) ?>">
 </head>
 <body>
 <div class="wrap">
@@ -371,6 +317,9 @@ details[open] summary::before { content:"− "; }
   <div class="topbar">
     <img class="logo" src="../assets/img/logo.webp" alt="The Move">
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <a class="btn btn--mini" href="index.php">Termíny</a>
+      <a class="btn btn--ghost btn--mini" href="klienti.php">Klienti</a>
+      <a class="btn btn--ghost btn--mini" href="novinky.php">Novinky</a>
       <a class="btn btn--ghost btn--mini" href="../index.html#terminy">Zobrazit web</a>
       <a class="btn btn--ghost btn--mini" href="?heslo=1">Změna hesla</a>
       <form method="post" style="display:inline">

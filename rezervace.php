@@ -26,8 +26,23 @@ $plne = 0;
 
 $token  = trim((string) ($_POST['token'] ?? $_GET['k'] ?? ''));
 $tokenP = trim((string) ($_POST['token_p'] ?? $_GET['p'] ?? ''));
+$tokenN = trim((string) ($_POST['token_n'] ?? $_GET['n'] ?? ''));   // odhlášení z novinek
 $akce   = (string) ($_POST['akce'] ?? $_GET['akce'] ?? '');
 $jePost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+
+// Odhlášení z novinek má vlastní jednoduchou obrazovku.
+if ($tokenN !== '') {
+    $klient = klient_podle_tokenu($pdo, $tokenN);
+    $odhlasen = $klient !== null && (int) $klient['novinky'] === 0;
+
+    if ($jePost && $akce === 'odhlasit_novinky' && $klient) {
+        odhlas_z_novinek($pdo, $tokenN);
+        $odhlasen = true;
+    }
+
+    require __DIR__ . '/inc/odhlaseni.php';
+    exit;
+}
 
 if ($token !== '') {
     $s = $pdo->prepare(

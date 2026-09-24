@@ -367,6 +367,7 @@
         jmeno: bookingForm.jmeno.value.trim(),
         email: bookingForm.email.value.trim(),
         telefon: bookingForm.telefon.value.trim(),
+        novinky: bookingForm.novinky ? bookingForm.novinky.checked : true,
         web: bookingForm.web.value
       };
 

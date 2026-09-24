@@ -60,6 +60,33 @@ function db(): PDO
             vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
         )");
 
+        // Klient: jeden řádek na e-mailovou adresu. Vzniká sám při rezervaci,
+        // slouží k přehledu docházky a k rozesílání novinek.
+        $pdo->exec("CREATE TABLE IF NOT EXISTS klienti (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            email     TEXT    NOT NULL,
+            jmeno     TEXT    NOT NULL DEFAULT '',
+            telefon   TEXT    NOT NULL DEFAULT '',
+            token     TEXT    NOT NULL DEFAULT '',
+            novinky   INTEGER NOT NULL DEFAULT 1,     -- 0 = odhlášen z novinek
+            odhlaseno TEXT    NOT NULL DEFAULT '',    -- kdy se odhlásil
+            poznamka  TEXT    NOT NULL DEFAULT '',    -- interní, jen pro lektorku
+            vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
+        )");
+        $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS klienti_email
+                    ON klienti (email COLLATE NOCASE)');
+
+        // Rozeslané newslettery — kvůli přehledu, co už odešlo.
+        $pdo->exec("CREATE TABLE IF NOT EXISTS novinky (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            predmet   TEXT    NOT NULL,
+            text      TEXT    NOT NULL,
+            prijemcu  INTEGER NOT NULL DEFAULT 0,
+            odeslano  INTEGER NOT NULL DEFAULT 0,     -- kolika se povedlo doručit
+            stav      TEXT    NOT NULL DEFAULT 'rozpracovano',
+            vytvoreno TEXT    NOT NULL DEFAULT (datetime('now'))
+        )");
+
         // Trvalá přihláška: člověk chodí na pravidelné skupinové lekce a každou
         // nově vypsanou mu systém přidá sám.
         $pdo->exec("CREATE TABLE IF NOT EXISTS trvale_prihlasky (
@@ -92,6 +119,40 @@ function db(): PDO
         foreach ($pdo->query("SELECT id FROM rezervace WHERE token = ''") as $r) {
             $u = $pdo->prepare('UPDATE rezervace SET token = :t WHERE id = :id');
             $u->execute([':t' => novy_token(), ':id' => $r['id']]);
+        }
+
+        // Klienti z dosavadních rezervací — jméno a telefon bereme z té
+        // poslední, ať je kartotéka hned plná a nečeká se na novou rezervaci.
+        $chybejici = $pdo->query(
+            "SELECT r.email, r.jmeno, r.telefon, MIN(r.vytvoreno) AS od
+             FROM rezervace r
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM klienti k WHERE k.email = r.email COLLATE NOCASE
+             )
+             GROUP BY r.email COLLATE NOCASE"
+        );
+        $vloz = $pdo->prepare(
+            'INSERT OR IGNORE INTO klienti (email, jmeno, telefon, token, vytvoreno)
+             VALUES (:e, :j, :t, :tok, :od)'
+        );
+        foreach ($chybejici as $k) {
+            $posledni = $pdo->prepare(
+                'SELECT jmeno, telefon FROM rezervace
+                 WHERE email = :e COLLATE NOCASE ORDER BY vytvoreno DESC LIMIT 1'
+            );
+            $posledni->execute([':e' => $k['email']]);
+            $p = $posledni->fetch() ?: $k;
+
+            $vloz->execute([
+                ':e' => $k['email'], ':j' => $p['jmeno'], ':t' => $p['telefon'],
+                ':tok' => novy_token(), ':od' => $k['od'],
+            ]);
+        }
+
+        // Token je klíč k odhlášení z novinek, bez něj by odkaz nefungoval.
+        foreach ($pdo->query("SELECT id FROM klienti WHERE token = ''") as $k) {
+            $u = $pdo->prepare('UPDATE klienti SET token = :t WHERE id = :id');
+            $u->execute([':t' => novy_token(), ':id' => $k['id']]);
         }
     }
 

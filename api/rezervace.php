@@ -47,7 +47,9 @@ if (mb_strlen($telefon) > 30) {
 }
 
 try {
-    $vysledek = vytvor_rezervaci(db(), $terminId, $jmeno, $email, $telefon);
+    // Když pole chybí (starší uložená stránka), novinky zapneme.
+    $novinky = !isset($data['novinky']) || (bool) $data['novinky'];
+    $vysledek = vytvor_rezervaci(db(), $terminId, $jmeno, $email, $telefon, 'web', $novinky);
 
     if (!$vysledek['ok']) {
         odpoved(false, $vysledek['chyba'], $vysledek['kod']);

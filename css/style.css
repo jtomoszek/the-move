@@ -957,6 +957,25 @@ h1, h2, h3, h4, h5, h6, .h-style {
   color: var(--grey);
 }
 
+.form-check {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  font-size: 0.8125rem;
+  line-height: 155%;
+  color: var(--grey);
+  cursor: pointer;
+}
+
+.form-check input {
+  margin-top: 0.15rem;
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  accent-color: var(--yellow);
+}
+
 @media screen and (max-width: 991px) {
   .contact-grid { grid-template-columns: 1fr; }
 }

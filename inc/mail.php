@@ -144,6 +144,64 @@ function odkaz_trvale(string $token): string
     return zakladni_url() . '/rezervace.php?p=' . urlencode($token);
 }
 
+/** Odkaz na odhlášení z novinek — povinná součást každého newsletteru. */
+function odkaz_odhlaseni(string $token): string
+{
+    return zakladni_url() . '/rezervace.php?n=' . urlencode($token);
+}
+
+/**
+ * Newsletter. Text se píše v administraci jako obyčejné odstavce oddělené
+ * prázdným řádkem; tady se z nich složí HTML ve stejné grafice jako
+ * ostatní e-maily.
+ */
+function email_novinky(array $klient, string $predmet, string $text): bool
+{
+    $odstavce = preg_split('~\n\s*\n~', trim($text)) ?: [];
+
+    $html = '';
+    foreach ($odstavce as $i => $o) {
+        $html .= '<p style="margin:' . ($i === 0 ? '0' : '16px 0 0 0')
+            . ';font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:26px;'
+            . 'mso-line-height-rule:exactly;color:#666666;">'
+            . nl2br(htmlspecialchars($o, ENT_QUOTES, 'UTF-8'))
+            . '</p>';
+    }
+
+    $odhlaseni = 'Novinky vám chodí, protože u nás chodíte na lekce. '
+        . '<a href="' . htmlspecialchars(odkaz_odhlaseni((string) $klient['token']), ENT_QUOTES, 'UTF-8')
+        . '" style="color:#111111;text-decoration:underline;">Odhlásit novinky</a>';
+
+    // Text jde do bloku volného textu, perex ani detail se nepoužívají.
+    $celek = sablona_zprava(mail_zaklad() + [
+        'titulek'          => $predmet . ' · The Move',
+        'preheader'        => mb_substr(trim(preg_replace('~\s+~', ' ', $text) ?: ''), 0, 140),
+        'stitek'           => 'Novinky',
+        'nadpis'           => $predmet,
+        'html_volny_text'  => $html,
+        'tlacitko_url'     => zakladni_url() . '/index.html#terminy',
+        'tlacitko_text'    => 'Zobrazit volné termíny',
+        'html_zruseni'     => $odhlaseni,
+    ], [
+        'perex'      => false,
+        'volny_text' => true,
+        'detail'     => false,
+        'seznam'     => false,
+        'perex2'     => false,
+        'pravidelne' => false,
+    ]);
+
+    $textovaVerze = $predmet . "\n\n" . trim($text) . "\n\n"
+        . 'Volné termíny: ' . zakladni_url() . "/index.html#terminy\n\n"
+        . 'Odhlásit novinky: ' . odkaz_odhlaseni((string) $klient['token']) . "\n\n"
+        . "Více pohybu. Více radosti. Více života.\n\n"
+        . 'Dotazy: ' . MAIL_ODESILATEL . ' · ' . MAIL_TELEFON . "\n"
+        . MAIL_FIRMA . "\n";
+
+    return posli_mail((string) $klient['email'], (string) $klient['jmeno'],
+        $predmet, $celek, $textovaVerze);
+}
+
 /** Jedno řádkové shrnutí termínu do textové verze e-mailu. */
 function termin_textem(array $t): string
 {
@@ -217,6 +275,7 @@ function email_potvrzeni(array $rezervace, array $termin): bool
         'pravidelne_url'   => odkaz_rezervace($rezervace['token'], 'pravidelne'),
         'html_zruseni'     => $zruseni,
     ], [
+        'perex'      => true,
         'detail'     => true,
         'seznam'     => false,
         'perex2'     => $perex2 !== '',
@@ -293,6 +352,7 @@ function email_pravidelne(array $prihlaska, array $rezervace): bool
         'tlacitko_text'  => 'Upravit můj výběr',
         'html_zruseni'   => $zruseni,
     ], [
+        'perex'      => true,
         'detail'     => false,
         'seznam'     => true,
         'pravidelne' => false,
@@ -351,6 +411,7 @@ function email_nove_terminy(array $prihlaska, array $terminy): bool
         'tlacitko_text'     => 'Vybrat si termíny',
         'html_zruseni'      => $zruseni,
     ], [
+        'perex'      => true,
         'detail'     => false,
         'seznam'     => true,
         'pravidelne' => false,
@@ -422,6 +483,7 @@ function email_pripominka(array $rezervace, array $termin): bool
         'tlacitko_text'    => 'Přidat do kalendáře',
         'html_zruseni'     => $zruseni,
     ], [
+        'perex'      => true,
         'detail'     => true,
         'seznam'     => false,
         'perex2'     => $perex2 !== '',

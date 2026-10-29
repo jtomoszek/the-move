@@ -38,6 +38,7 @@ try {
             'id'       => (int) $row['id'],
             'den'      => cesky_den($row['datum']),
             'datum'    => ceske_datum($row['datum']),
+            'datum_iso' => $row['datum'],   // kvůli kalendáři na stránce termínů
             'cas_od'   => $row['cas_od'],
             'cas_do'   => $row['cas_do'],
             'misto'    => $row['misto'],

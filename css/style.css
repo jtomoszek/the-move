@@ -2158,3 +2158,184 @@ h1, h2, h3, h4, h5, h6, .h-style {
   .curve-svg path { stroke-dashoffset: 0 !important; transition: none !important; }
   .curve-svg, .curve-svg.is-visible { animation: none !important; }
 }
+
+/* ---------- Stránka termínů: měsíce, přepínač, kalendář ---------- */
+
+.terminy-ovladani {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+}
+
+.terminy-ovladani .schedule-filters { margin-bottom: 0; }
+
+.prepinac-zobrazeni {
+  display: inline-flex;
+  border: 1px solid var(--ink);
+  border-radius: 500px;
+  padding: 3px;
+  flex: none;
+}
+
+.prepinac-tlacitko {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 500px;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.prepinac-tlacitko.is-active { background: var(--ink); color: var(--paper); }
+
+/* Mezititulek měsíce ve výpisu */
+.schedule-mesic {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2.5rem 0 1rem;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 0;
+}
+
+.schedule-mesic:first-child { padding-top: 0; }
+
+/* Kalendář */
+.kalendar[hidden] { display: none; }
+.schedule[hidden] { display: none; }
+
+.kalendar-hlava {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.kalendar-hlava h2 { text-transform: capitalize; }
+
+.kalendar-sipka {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 500px;
+  background: transparent;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  flex: none;
+}
+
+.kalendar-sipka:hover { border-color: var(--ink); background: var(--paper-soft); }
+
+.kalendar-dny {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-top: 1.25rem;
+}
+
+.kalendar-dny span {
+  padding: 0.5rem 0.6rem;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--grey);
+}
+
+.kalendar-mrizka {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.kalendar-bunka {
+  background: var(--paper);
+  min-height: 7rem;
+  padding: 0.6rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.kalendar-bunka--prazdna { background: var(--paper-soft); }
+
+.kalendar-cislo { font-size: 0.8125rem; color: var(--grey); }
+
+.kalendar-bunka--dnes .kalendar-cislo {
+  background: var(--ink);
+  color: var(--paper);
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 500px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kalendar-bunka--akce { cursor: pointer; transition: background 0.2s ease; }
+.kalendar-bunka--akce:hover { background: var(--paper-soft); }
+
+.kalendar-bunka--vybrany { background: var(--paper-soft); box-shadow: inset 0 0 0 2px var(--ink); }
+
+.kalendar-akce { display: flex; flex-direction: column; gap: 0.25rem; }
+
+.kalendar-stitek {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kalendar-stitek--workshop { background: var(--yellow); border-color: var(--yellow); }
+.kalendar-stitek--seminar { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+.kalendar-tecky { display: none; gap: 3px; }
+.kalendar-tecka { width: 5px; height: 5px; border-radius: 500px; background: var(--ink); }
+
+.kalendar-detail { margin-top: 2rem; }
+
+.kalendar-detail-nadpis {
+  font-family: var(--font-head);
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.kalendar-detail[hidden] { display: none; }
+
+.kalendar-napoveda { margin-top: 1.5rem; font-size: 0.8125rem; }
+
+/* Na mobilu se do buněk štítky nevejdou — zůstanou jen tečky. */
+@media screen and (max-width: 767px) {
+  .terminy-ovladani { justify-content: flex-start; }
+  .kalendar-bunka { min-height: 4rem; padding: 0.4rem 0.3rem; align-items: center; gap: 0.3rem; }
+  .kalendar-cislo { font-size: 0.75rem; }
+  .kalendar-akce { display: none; }
+  .kalendar-tecky { display: flex; }
+  .kalendar-dny span { text-align: center; padding: 0.4rem 0; font-size: 10px; }
+  .schedule-mesic { font-size: 1.25rem; }
+}

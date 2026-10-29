@@ -139,10 +139,31 @@
   var IS_PREVIEW = /\.github\.io$/.test(location.hostname);
 
   // Na stránce se vypisuje po pěti termínech, zbytek na tlačítko „Další termíny".
+  // Na samostatné stránce termínů (data-rezim="plny") se vypisuje vše najednou
+  // a výpis se člení po měsících.
   var KROK_TERMINU = 5;
   var vsechnyTerminy = [];
   var aktivniFiltr = "vse";
   var zobrazeno = KROK_TERMINU;
+  var jePlnyVypis = !!(scheduleList && scheduleList.dataset.rezim === "plny");
+
+  var MESICE = ["leden", "únor", "březen", "duben", "květen", "červen",
+                "červenec", "srpen", "září", "říjen", "listopad", "prosinec"];
+
+  /** „2026-10-29" → Date v místním čase (new Date(text) umí v Safari zlobit). */
+  function naDatum(iso) {
+    var c = String(iso || "").split("-");
+    return new Date(+c[0], +c[1] - 1, +c[2]);
+  }
+
+  function klicMesice(iso) {
+    return String(iso || "").slice(0, 7);
+  }
+
+  function nazevMesice(iso) {
+    var d = naDatum(iso);
+    return MESICE[d.getMonth()] + " " + d.getFullYear();
+  }
 
   function filtrovaneTerminy() {
     if (aktivniFiltr === "vse") { return vsechnyTerminy; }
@@ -187,6 +208,12 @@
         zobrazeno = KROK_TERMINU;
         vykresliFiltry();
         renderSchedule();
+        // Kalendář ukazuje stejnou množinu termínů jako seznam.
+        if (kalendar && !kalendar.hidden) {
+          vybranyDen = "";
+          zobrazenyMesic = vychoziMesic();
+          vykresliKalendar();
+        }
       });
       scheduleFilters.appendChild(b);
     });
@@ -214,41 +241,18 @@
       return;
     }
 
-    vybrane.slice(0, zobrazeno).forEach(function (t) {
-      var row = document.createElement("div");
-      row.className = "schedule-row";
-
-      var free;
-      if (t.volno === 0) {
-        free = '<span class="schedule-free schedule-free--full">Obsazeno</span>';
-      } else if (t.volno <= 2) {
-        free = '<span class="schedule-free schedule-free--low">Poslední ' +
-          t.volno + " " + (t.volno === 1 ? "volné místo" : "volná místa") +
-          " z " + t.kapacita + "</span>";
-      } else {
-        free = '<span class="schedule-free">Volno ' + t.volno + " z " + t.kapacita + "</span>";
+    var mesicVypisu = "";
+    vybrane.slice(0, jePlnyVypis ? vybrane.length : zobrazeno).forEach(function (t) {
+      // V plném výpisu odděluje každý měsíc vlastní mezititulek.
+      if (jePlnyVypis && klicMesice(t.datum_iso) !== mesicVypisu) {
+        mesicVypisu = klicMesice(t.datum_iso);
+        var hlava = document.createElement("h2");
+        hlava.className = "schedule-mesic";
+        hlava.textContent = nazevMesice(t.datum_iso);
+        scheduleList.appendChild(hlava);
       }
 
-      row.innerHTML =
-        '<span class="schedule-time">' +
-        '<span class="schedule-type schedule-type--' + escapeHtml(t.typ || "lekce") + '">' +
-        escapeHtml(t.typ_nazev || "Skupinová lekce") + "</span>" +
-        t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + "</span>" +
-        '<span class="schedule-place">' + escapeHtml(t.misto) +
-        (t.poznamka ? ' <small class="text-grey">' + escapeHtml(t.poznamka) + "</small>" : "") + "</span>" +
-        '<span class="schedule-slot">' + free +
-        (t.cena ? '<span class="schedule-price">' + escapeHtml(t.cena) + "</span>" : "") + "</span>" +
-        (t.volno > 0
-          ? '<button type="button" class="button" data-book="' + t.id + '">Rezervovat místo</button>'
-          : '<a href="#kontakt" class="button" style="opacity:.5">Napsat si o místo</a>');
-
-      if (t.volno > 0) {
-        row.querySelector("[data-book]").addEventListener("click", function () {
-          openBooking(t);
-        });
-      }
-
-      scheduleList.appendChild(row);
+      scheduleList.appendChild(postavRadek(t));
     });
 
     if (scheduleMoreBtn) {
@@ -288,6 +292,188 @@
     });
   }
 
+  /* ---------- Kalendářní zobrazení (stránka termínů) ---------- */
+  var kalendar = document.getElementById("kalendar");
+  var kalendarMrizka = document.getElementById("kalendar-mrizka");
+  var kalendarDetail = document.getElementById("kalendar-detail");
+  var kalendarPopisek = document.getElementById("kalendar-mesic");
+  var zobrazenyMesic = null;   // Date = první den zobrazeného měsíce
+  var vybranyDen = "";
+
+  /** Termíny vybraného druhu seskupené podle dne (klíč „2026-10-29"). */
+  function terminyPoDnech() {
+    var mapa = {};
+    filtrovaneTerminy().forEach(function (t) {
+      var den = String(t.datum_iso || "");
+      if (!den) { return; }
+      if (!mapa[den]) { mapa[den] = []; }
+      mapa[den].push(t);
+    });
+    return mapa;
+  }
+
+  /** Měsíc, ve kterém je nejbližší termín — s ním kalendář otevřeme. */
+  function vychoziMesic() {
+    var prvni = filtrovaneTerminy()[0];
+    var d = prvni && prvni.datum_iso ? naDatum(prvni.datum_iso) : new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
+  function vykresliKalendar() {
+    if (!kalendar || !kalendarMrizka) { return; }
+    if (!zobrazenyMesic) { zobrazenyMesic = vychoziMesic(); }
+
+    var rok = zobrazenyMesic.getFullYear();
+    var mesic = zobrazenyMesic.getMonth();
+    kalendarPopisek.textContent = MESICE[mesic] + " " + rok;
+
+    var dnyMapa = terminyPoDnech();
+    var dnesIso = new Date().toISOString().slice(0, 10);
+
+    // Mřížka začíná pondělím: getDay() dává 0 = neděle, proto posun.
+    var prvni = new Date(rok, mesic, 1);
+    var posun = (prvni.getDay() + 6) % 7;
+    var pocetDnu = new Date(rok, mesic + 1, 0).getDate();
+
+    kalendarMrizka.innerHTML = "";
+
+    for (var i = 0; i < posun; i++) {
+      var prazdne = document.createElement("div");
+      prazdne.className = "kalendar-bunka kalendar-bunka--prazdna";
+      kalendarMrizka.appendChild(prazdne);
+    }
+
+    for (var den = 1; den <= pocetDnu; den++) {
+      var iso = rok + "-" + String(mesic + 1).padStart(2, "0") + "-" + String(den).padStart(2, "0");
+      var akce = dnyMapa[iso] || [];
+
+      var bunka = document.createElement(akce.length ? "button" : "div");
+      bunka.className = "kalendar-bunka";
+      if (akce.length) {
+        bunka.type = "button";
+        bunka.classList.add("kalendar-bunka--akce");
+        bunka.dataset.den = iso;
+      }
+      if (iso === dnesIso) { bunka.classList.add("kalendar-bunka--dnes"); }
+      if (iso === vybranyDen) { bunka.classList.add("kalendar-bunka--vybrany"); }
+
+      var popis = '<span class="kalendar-cislo">' + den + "</span>";
+      if (akce.length) {
+        popis += '<span class="kalendar-akce">';
+        akce.forEach(function (t) {
+          popis += '<span class="kalendar-stitek kalendar-stitek--' + escapeHtml(t.typ || "lekce") + '">' +
+            escapeHtml(t.cas_od) + (t.volno === 0 ? " · plno" : "") + "</span>";
+        });
+        popis += "</span>";
+        popis += '<span class="kalendar-tecky" aria-hidden="true">' +
+          akce.map(function () { return '<span class="kalendar-tecka"></span>'; }).join("") + "</span>";
+      }
+      bunka.innerHTML = popis;
+
+      if (akce.length) {
+        bunka.addEventListener("click", function () {
+          vybranyDen = vybranyDen === this.dataset.den ? "" : this.dataset.den;
+          vykresliKalendar();
+          if (vybranyDen && kalendarDetail) {
+            kalendarDetail.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        });
+      }
+
+      kalendarMrizka.appendChild(bunka);
+    }
+
+    vykresliDetailDne(dnyMapa[vybranyDen] || []);
+  }
+
+  function vykresliDetailDne(akce) {
+    if (!kalendarDetail) { return; }
+    kalendarDetail.innerHTML = "";
+    kalendarDetail.hidden = !akce.length;
+    if (!akce.length) { return; }
+
+    var nadpis = document.createElement("h3");
+    nadpis.className = "kalendar-detail-nadpis";
+    nadpis.textContent = akce[0].den + " " + akce[0].datum;
+    kalendarDetail.appendChild(nadpis);
+
+    akce.forEach(function (t) { kalendarDetail.appendChild(postavRadek(t)); });
+  }
+
+  if (kalendar) {
+    document.getElementById("kalendar-zpet").addEventListener("click", function () {
+      zobrazenyMesic = new Date(zobrazenyMesic.getFullYear(), zobrazenyMesic.getMonth() - 1, 1);
+      vybranyDen = "";
+      vykresliKalendar();
+    });
+    document.getElementById("kalendar-vpred").addEventListener("click", function () {
+      zobrazenyMesic = new Date(zobrazenyMesic.getFullYear(), zobrazenyMesic.getMonth() + 1, 1);
+      vybranyDen = "";
+      vykresliKalendar();
+    });
+  }
+
+  /* ---------- Přepínač seznam / kalendář ---------- */
+  var prepinaceZobrazeni = document.querySelectorAll("[data-zobrazeni]");
+  prepinaceZobrazeni.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var kalendarni = btn.dataset.zobrazeni === "kalendar";
+
+      prepinaceZobrazeni.forEach(function (b) {
+        b.classList.toggle("is-active", b === btn);
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+
+      if (scheduleList) { scheduleList.hidden = kalendarni; }
+      if (kalendar) { kalendar.hidden = !kalendarni; }
+      if (kalendarni) {
+        if (!zobrazenyMesic) { zobrazenyMesic = vychoziMesic(); }
+        vykresliKalendar();
+      }
+
+      // Ať se volba drží i po obnovení stránky.
+      try { localStorage.setItem("themove-zobrazeni", btn.dataset.zobrazeni); } catch (e) {}
+    });
+  });
+
+  /** Jeden řádek výpisu termínu. */
+  function postavRadek(t) {
+    var row = document.createElement("div");
+    row.className = "schedule-row";
+
+    var free;
+    if (t.volno === 0) {
+      free = '<span class="schedule-free schedule-free--full">Obsazeno</span>';
+    } else if (t.volno <= 2) {
+      free = '<span class="schedule-free schedule-free--low">Poslední ' +
+        t.volno + " " + (t.volno === 1 ? "volné místo" : "volná místa") +
+        " z " + t.kapacita + "</span>";
+    } else {
+      free = '<span class="schedule-free">Volno ' + t.volno + " z " + t.kapacita + "</span>";
+    }
+
+    row.innerHTML =
+      '<span class="schedule-time">' +
+      '<span class="schedule-type schedule-type--' + escapeHtml(t.typ || "lekce") + '">' +
+      escapeHtml(t.typ_nazev || "Skupinová lekce") + "</span>" +
+      t.den + " " + t.datum + " · " + t.cas_od + " do " + t.cas_do + "</span>" +
+      '<span class="schedule-place">' + escapeHtml(t.misto) +
+      (t.poznamka ? ' <small class="text-grey">' + escapeHtml(t.poznamka) + "</small>" : "") + "</span>" +
+      '<span class="schedule-slot">' + free +
+      (t.cena ? '<span class="schedule-price">' + escapeHtml(t.cena) + "</span>" : "") + "</span>" +
+      (t.volno > 0
+        ? '<button type="button" class="button" data-book="' + t.id + '">Rezervovat místo</button>'
+        : '<a href="index.html#kontakt" class="button" style="opacity:.5">Napsat si o místo</a>');
+
+    if (t.volno > 0) {
+      row.querySelector("[data-book]").addEventListener("click", function () {
+        openBooking(t);
+      });
+    }
+
+    return row;
+  }
+
   function escapeHtml(s) {
     var div = document.createElement("div");
     div.textContent = s == null ? "" : String(s);
@@ -301,6 +487,14 @@
       .then(function (data) {
         if (data && data.ok) {
           renderSchedule(data.terminy);
+
+          // Vrátíme zobrazení, které si návštěvník zvolil minule.
+          var ulozene = null;
+          try { ulozene = localStorage.getItem("themove-zobrazeni"); } catch (e) {}
+          if (ulozene === "kalendar") {
+            var tlacitko = document.querySelector('[data-zobrazeni="kalendar"]');
+            if (tlacitko) { tlacitko.click(); }
+          }
           if (IS_PREVIEW) {
             var note = document.createElement("p");
             note.className = "schedule-loading text-grey text-small";

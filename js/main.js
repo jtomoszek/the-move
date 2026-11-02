@@ -361,8 +361,14 @@
       if (akce.length) {
         popis += '<span class="kalendar-akce">';
         akce.forEach(function (t) {
+          // V buňce je čas, druh akce i místo — ať je na první pohled jasné,
+          // o co jde, bez nutnosti den rozklikávat.
           popis += '<span class="kalendar-stitek kalendar-stitek--' + escapeHtml(t.typ || "lekce") + '">' +
-            escapeHtml(t.cas_od) + (t.volno === 0 ? " · plno" : "") + "</span>";
+            '<span class="kalendar-cas">' + escapeHtml(t.cas_od) +
+            (t.volno === 0 ? " · plno" : "") + "</span>" +
+            '<span class="kalendar-druh">' + escapeHtml(t.typ_nazev || "") + "</span>" +
+            (t.misto ? '<span class="kalendar-misto">' + escapeHtml(t.misto) + "</span>" : "") +
+            "</span>";
         });
         popis += "</span>";
         popis += '<span class="kalendar-tecky" aria-hidden="true">' +

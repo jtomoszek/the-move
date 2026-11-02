@@ -2264,7 +2264,7 @@ h1, h2, h3, h4, h5, h6, .h-style {
 
 .kalendar-bunka {
   background: var(--paper);
-  min-height: 7rem;
+  min-height: 9.5rem;
   padding: 0.6rem;
   text-align: left;
   font: inherit;
@@ -2298,14 +2298,28 @@ h1, h2, h3, h4, h5, h6, .h-style {
 .kalendar-akce { display: flex; flex-direction: column; gap: 0.25rem; }
 
 .kalendar-stitek {
-  font-size: 11px;
-  letter-spacing: 0.3px;
-  padding: 0.2rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0.3rem 0.45rem;
   border: 1px solid var(--ink);
   border-radius: 3px;
-  white-space: nowrap;
+  letter-spacing: 0.3px;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.kalendar-cas { font-size: 11px; font-weight: 500; white-space: nowrap; }
+
+.kalendar-druh {
+  font-size: 10px;
+  line-height: 130%;
+  opacity: 0.85;
+}
+
+.kalendar-misto {
+  font-size: 9px;
+  line-height: 130%;
+  opacity: 0.65;
 }
 
 .kalendar-stitek--workshop { background: var(--yellow); border-color: var(--yellow); }

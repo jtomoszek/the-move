@@ -257,6 +257,44 @@ function overeny_typ(?string $typ): string
     return isset(typy_udalosti()[(string) $typ]) ? (string) $typ : 'lekce';
 }
 
+/**
+ * Výchozí text poznámky do e-mailů pro daný druh akce.
+ *
+ * Pamatuje si naposledy použitý text zvlášť pro lekce, workshopy i semináře,
+ * aby se u další akce téhož druhu nabídl sám. U skupinových lekcí má
+ * zabudovaný popis cesty do sálu, dokud si lektorka nenapíše vlastní.
+ */
+function vychozi_poznamka(PDO $pdo, string $typ): string
+{
+    $s = $pdo->prepare("SELECT hodnota FROM nastaveni WHERE klic = :k");
+    $s->execute([':k' => 'poznamka_email_' . overeny_typ($typ)]);
+    $ulozena = $s->fetchColumn();
+
+    if ($ulozena !== false && trim((string) $ulozena) !== '') {
+        return (string) $ulozena;
+    }
+
+    if (overeny_typ($typ) === 'lekce') {
+        return 'Lekce probíhají ve cvičebním sále v prvním patře DK Poklad. '
+            . 'Ze vstupní haly půjdete vpravo po schodech nahoru - šatny i sál jsou potom v levé části. '
+            . 'V kulturním domě funguje u vstupu recepce, tam Vás případně nasměrují.';
+    }
+
+    return '';
+}
+
+/** Zapamatuje si poznámku pro příští akci téhož druhu. Prázdnou neukládá. */
+function zapamatuj_poznamku(PDO $pdo, string $typ, string $poznamka): void
+{
+    if (trim($poznamka) === '') { return; }
+
+    $s = $pdo->prepare(
+        "INSERT INTO nastaveni (klic, hodnota) VALUES (:k, :v)
+         ON CONFLICT(klic) DO UPDATE SET hodnota = :v"
+    );
+    $s->execute([':k' => 'poznamka_email_' . overeny_typ($typ), ':v' => $poznamka]);
+}
+
 /** Český název dne v týdnu pro datum YYYY-MM-DD. */
 function cesky_den(string $datum): string
 {

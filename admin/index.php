@@ -154,6 +154,7 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
                          ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka,
                          ':pe' => $poznamkaEmail, ':z' => $zverejnit,
                          ':ozn' => $typ === 'lekce' ? 0 : 1]);
+            zapamatuj_poznamku($pdo, $typ, $poznamkaEmail);
             presmeruj('?ok=pridano');
         } else {
             $s = $pdo->prepare('UPDATE terminy SET datum=:d, cas_od=:od, cas_do=:do, misto=:m, adresa=:a,
@@ -162,6 +163,7 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
                          ':typ' => $typ, ':c' => $cena, ':k' => $kapacita, ':p' => $poznamka,
                          ':pe' => $poznamkaEmail, ':z' => $zverejnit,
                          ':id' => (int) ($_POST['id'] ?? 0)]);
+            zapamatuj_poznamku($pdo, $typ, $poznamkaEmail);
             presmeruj('?ok=upraveno');
         }
     }
@@ -446,14 +448,21 @@ $csrf = csrf_token();
       <div class="grid">
         <div class="pole" style="grid-column:span 4"><label>Poznámka do e-mailů (nepovinné, přijde v potvrzení a připomínce)</label>
           <?php
-          // U nové skupinové lekce je e-mailová poznámka předvyplněná popisem
-          // cesty; u workshopu a semináře se vyprázdní (hlídá skript níže).
-          $poznamkaVychozi = 'Lekce probíhají ve cvičebním sále v prvním patře DK Poklad. '
-              . 'Ze vstupní haly půjdete vpravo po schodech nahoru - šatny i sál jsou potom v levé části. '
-              . 'V kulturním domě funguje u vstupu recepce, tam Vás případně nasměrují.';
-          $poznamkaEmailHodnota = $editTermin ? (string) ($editTermin['poznamka_email'] ?? '') : $poznamkaVychozi;
+          // Ke každému druhu akce si systém pamatuje naposledy použitý text
+          // a u nové akce téhož druhu ho rovnou nabídne (hlídá skript níže).
+          $sablony = [];
+          foreach (array_keys(typy_udalosti()) as $klicTypu) {
+              $sablony[$klicTypu] = vychozi_poznamka($pdo, $klicTypu);
+          }
+          $poznamkaEmailHodnota = $editTermin
+              ? (string) ($editTermin['poznamka_email'] ?? '')
+              : $sablony[overeny_typ($editTermin['typ'] ?? 'lekce')];
           ?>
-          <textarea name="poznamka_email" rows="3" data-vychozi-lekce="<?= e($poznamkaVychozi) ?>"><?= e($poznamkaEmailHodnota) ?></textarea></div>
+          <textarea name="poznamka_email" rows="3"
+                    data-sablony="<?= e(json_encode($sablony, JSON_UNESCAPED_UNICODE)) ?>"><?= e($poznamkaEmailHodnota) ?></textarea>
+          <span class="text-grey" style="display:block;margin-top:.4rem;font-size:.75rem">
+            Text se uloží jako vzor pro další akci stejného druhu.
+          </span></div>
       </div>
       <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
         <label class="prepinac" style="margin:0">
@@ -616,23 +625,31 @@ document.querySelectorAll('form[data-potvrdit]').forEach(function (form) {
   btn.addEventListener('blur', function () { if (nabito) { setTimeout(reset, 200); } });
 });
 
-/* E-mailová poznámka s popisem cesty patří jen ke skupinovým lekcím: při
-   přepnutí druhu na workshop/seminář se předvyplněný text uklidí, při návratu
-   zase doplní. Vlastního textu se skript nedotkne. */
+/* Každý druh akce má vlastní vzor e-mailové poznámky. Při přepnutí druhu se
+   nabídne ten jeho — ale jen pokud je pole prázdné nebo v něm stojí vzor
+   jiného druhu. Vlastního textu se skript nedotkne. */
 (function () {
   var typ = document.querySelector('select[name=typ]');
   var poznamka = document.querySelector('textarea[name=poznamka_email]');
   if (!typ || !poznamka) { return; }
-  var vychozi = poznamka.dataset.vychoziLekce || '';
+
+  var sablony = {};
+  try { sablony = JSON.parse(poznamka.dataset.sablony || '{}'); } catch (e) {}
+
+  function jeVzor(text) {
+    if (text.trim() === '') { return true; }
+    for (var k in sablony) {
+      if (sablony[k] && sablony[k].trim() === text.trim()) { return true; }
+    }
+    return false;
+  }
 
   var cena = document.querySelector('input[name=cena]');
   var vychoziCeny = cena ? JSON.parse(cena.dataset.vychozi || '{}') : {};
 
   typ.addEventListener('change', function () {
-    if (typ.value === 'lekce' && poznamka.value.trim() === '') {
-      poznamka.value = vychozi;
-    } else if (typ.value !== 'lekce' && poznamka.value.trim() === vychozi.trim()) {
-      poznamka.value = '';
+    if (jeVzor(poznamka.value)) {
+      poznamka.value = sablony[typ.value] || '';
     }
 
     // Cenu přepíšeme jen tehdy, když je prázdná nebo rovná některé výchozí —

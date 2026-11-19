@@ -8,14 +8,12 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../inc/rezervace.php';
+require __DIR__ . '/../inc/prihlaseni.php';
 
-session_set_cookie_params([
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
+spust_session();
 
 $pdo = db();
+uklid_prihlaseni($pdo);
 
 /* ---------- pomocné funkce ---------- */
 
@@ -61,8 +59,9 @@ function presmeruj(string $kam = '')
     exit;
 }
 
-$adminHash = nastaveni_get($pdo, 'admin_hash');
-$prihlasen = !empty($_SESSION['admin']);
+$uzivatel  = prihlaseny_uzivatel($pdo);
+$prihlasen = $uzivatel !== null;
+$maUcty    = (int) $pdo->query('SELECT COUNT(*) FROM uzivatele')->fetchColumn() > 0;
 $chyba = '';
 $zprava = '';
 
@@ -70,36 +69,51 @@ $zprava = '';
 
 $akce = $_POST['akce'] ?? '';
 
-// První spuštění: vytvoření hesla
-if ($akce === 'zalozit_heslo' && $adminHash === null) {
+// První spuštění: založení prvního účtu
+if ($akce === 'zalozit_ucet' && !$maUcty) {
+    $email = trim((string) ($_POST['email'] ?? ''));
+    $jmeno = trim((string) ($_POST['jmeno'] ?? ''));
     $h1 = (string) ($_POST['heslo'] ?? '');
     $h2 = (string) ($_POST['heslo2'] ?? '');
-    if (mb_strlen($h1) < 8) {
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $chyba = 'Vyplňte prosím platný e-mail.';
+    } elseif (mb_strlen($h1) < 8) {
         $chyba = 'Heslo musí mít alespoň 8 znaků.';
     } elseif ($h1 !== $h2) {
         $chyba = 'Hesla se neshodují.';
     } else {
-        nastaveni_set($pdo, 'admin_hash', password_hash($h1, PASSWORD_DEFAULT));
-        session_regenerate_id(true);
-        $_SESSION['admin'] = true;
+        $i = $pdo->prepare('INSERT INTO uzivatele (email, jmeno, heslo) VALUES (:e, :j, :h)');
+        $i->execute([':e' => $email, ':j' => $jmeno, ':h' => password_hash($h1, PASSWORD_DEFAULT)]);
+        $novy = uzivatel_podle_emailu($pdo, $email);
+        if ($novy) {
+            prihlas_uzivatele($pdo, $novy);
+            zapamatuj_prihlaseni($pdo, (int) $novy['id']);
+        }
         presmeruj();
     }
 }
 
 // Přihlášení
-if ($akce === 'prihlasit' && $adminHash !== null) {
-    if (password_verify((string) ($_POST['heslo'] ?? ''), $adminHash)) {
-        session_regenerate_id(true);
-        $_SESSION['admin'] = true;
+if ($akce === 'prihlasit' && $maUcty) {
+    $email = trim((string) ($_POST['email'] ?? ''));
+    $u = over_heslo($pdo, $email, (string) ($_POST['heslo'] ?? ''));
+    if ($u) {
+        prihlas_uzivatele($pdo, $u);
+        if (!empty($_POST['zustat'])) {
+            zapamatuj_prihlaseni($pdo, (int) $u['id']);
+        }
         presmeruj();
     }
     sleep(1); // brzda proti zkoušení hesel
-    $chyba = 'Nesprávné heslo.';
+    $chyba = 'Nesprávný e-mail nebo heslo.';
 }
 
 // Odhlášení
 if ($akce === 'odhlasit' && $prihlasen) {
     csrf_over();
+    zapomen_prihlaseni($pdo);
+    $_SESSION = [];
     session_destroy();
     presmeruj();
 }
@@ -193,15 +207,21 @@ if ($prihlasen && in_array($akce, ['pridat', 'upravit', 'smazat', 'smazat_rezerv
         $stare = (string) ($_POST['stare'] ?? '');
         $h1 = (string) ($_POST['heslo'] ?? '');
         $h2 = (string) ($_POST['heslo2'] ?? '');
-        if (!password_verify($stare, $adminHash)) {
+        if (!password_verify($stare, (string) $uzivatel['heslo'])) {
             $chyba = 'Současné heslo není správné.';
         } elseif (mb_strlen($h1) < 8) {
             $chyba = 'Nové heslo musí mít alespoň 8 znaků.';
         } elseif ($h1 !== $h2) {
             $chyba = 'Nová hesla se neshodují.';
         } else {
-            nastaveni_set($pdo, 'admin_hash', password_hash($h1, PASSWORD_DEFAULT));
-            $zprava = 'Heslo bylo změněno.';
+            $u = $pdo->prepare('UPDATE uzivatele SET heslo = :h WHERE id = :id');
+            $u->execute([':h' => password_hash($h1, PASSWORD_DEFAULT), ':id' => $uzivatel['id']]);
+            // Změna hesla zruší dlouhodobá přihlášení na ostatních zařízeních.
+            $d = $pdo->prepare('DELETE FROM prihlaseni WHERE uzivatel_id = :u');
+            $d->execute([':u' => $uzivatel['id']]);
+            zapamatuj_prihlaseni($pdo, (int) $uzivatel['id']);
+            $uzivatel = uzivatel_podle_id($pdo, (int) $uzivatel['id']);
+            $zprava = 'Heslo bylo změněno. Na ostatních zařízeních se budete muset přihlásit znovu.';
         }
     }
 }
@@ -273,8 +293,21 @@ $csrf = csrf_token();
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin.css?v=<?= substr(md5_file(__DIR__ . '/admin.css') ?: '', 0, 8) ?>">
+<link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Move">
+<link rel="apple-touch-icon" href="ikony/ikona-192.png">
 </head>
 <body>
+<script>
+  /* Registrace aplikace — umožní přidání na plochu telefonu. */
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+</script>
 <div class="wrap">
 
 <?php if (!$prihlasen): ?>
@@ -282,13 +315,21 @@ $csrf = csrf_token();
   <div class="login">
     <div class="card">
       <img class="logo" src="../assets/img/logo.webp" alt="The Move" style="margin-bottom:1.5rem">
-      <?php if ($adminHash === null): ?>
-        <h2>Vítejte! Nastavte si heslo</h2>
+      <?php if (!$maUcty): ?>
+        <h2>Vítejte! Založte si účet</h2>
         <?php if ($chyba): ?><div class="hlaska hlaska--chyba"><?= e($chyba) ?></div><?php endif; ?>
         <form method="post">
-          <input type="hidden" name="akce" value="zalozit_heslo">
+          <input type="hidden" name="akce" value="zalozit_ucet">
           <div style="margin-bottom:1.25rem">
-            <label for="h1">Nové heslo (min. 8 znaků)</label>
+            <label for="u-jmeno">Vaše jméno</label>
+            <input type="text" id="u-jmeno" name="jmeno" autocomplete="name" autofocus>
+          </div>
+          <div style="margin-bottom:1.25rem">
+            <label for="u-email">E-mail (jím se budete přihlašovat)</label>
+            <input type="email" id="u-email" name="email" required autocomplete="username">
+          </div>
+          <div style="margin-bottom:1.25rem">
+            <label for="h1">Heslo (min. 8 znaků)</label>
             <input type="password" id="h1" name="heslo" required minlength="8" autocomplete="new-password">
           </div>
           <div style="margin-bottom:1.5rem">
@@ -302,10 +343,18 @@ $csrf = csrf_token();
         <?php if ($chyba): ?><div class="hlaska hlaska--chyba"><?= e($chyba) ?></div><?php endif; ?>
         <form method="post">
           <input type="hidden" name="akce" value="prihlasit">
-          <div style="margin-bottom:1.5rem">
-            <label for="h">Heslo</label>
-            <input type="password" id="h" name="heslo" required autocomplete="current-password" autofocus>
+          <div style="margin-bottom:1.25rem">
+            <label for="p-email">E-mail</label>
+            <input type="email" id="p-email" name="email" required autocomplete="username" autofocus>
           </div>
+          <div style="margin-bottom:1.25rem">
+            <label for="h">Heslo</label>
+            <input type="password" id="h" name="heslo" required autocomplete="current-password">
+          </div>
+          <label class="prepinac" style="margin-bottom:1.5rem">
+            <input type="checkbox" name="zustat" value="1" checked>
+            Zůstat přihlášen/a na tomto zařízení
+          </label>
           <button class="btn" type="submit">Přihlásit se</button>
         </form>
       <?php endif; ?>

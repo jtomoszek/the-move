@@ -76,6 +76,35 @@ function db(): PDO
         $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS klienti_email
                     ON klienti (email COLLATE NOCASE)');
 
+        // Uživatelé administrace. Dřív se chodilo přes jedno sdílené heslo,
+        // teď má každý vlastní účet — viz migrace níže.
+        $pdo->exec("CREATE TABLE IF NOT EXISTS uzivatele (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            email      TEXT    NOT NULL,
+            jmeno      TEXT    NOT NULL DEFAULT '',
+            heslo      TEXT    NOT NULL,            -- otisk, ne heslo samotné
+            aktivni    INTEGER NOT NULL DEFAULT 1,
+            prihlasen  TEXT    NOT NULL DEFAULT '', -- naposledy
+            vytvoreno  TEXT    NOT NULL DEFAULT (datetime('now'))
+        )");
+        $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uzivatele_email
+                    ON uzivatele (email COLLATE NOCASE)');
+
+        // Trvalé přihlášení do administrace („zůstat přihlášen").
+        // Ukládá se jen otisk ověřovače, ze kterého se cookie zpětně nesestaví.
+        $pdo->exec("CREATE TABLE IF NOT EXISTS prihlaseni (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            uzivatel_id INTEGER NOT NULL DEFAULT 0,
+            selektor   TEXT    NOT NULL,
+            overovac   TEXT    NOT NULL,     -- sha256 otisk
+            zarizeni   TEXT    NOT NULL DEFAULT '',
+            platnost   TEXT    NOT NULL,
+            pouzito    TEXT    NOT NULL DEFAULT (datetime('now')),
+            vytvoreno  TEXT    NOT NULL DEFAULT (datetime('now'))
+        )");
+        $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS prihlaseni_selektor
+                    ON prihlaseni (selektor)');
+
         // Rozeslané newslettery — kvůli přehledu, co už odešlo.
         $pdo->exec("CREATE TABLE IF NOT EXISTS novinky (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,6 +148,21 @@ function db(): PDO
         foreach ($pdo->query("SELECT id FROM rezervace WHERE token = ''") as $r) {
             $u = $pdo->prepare('UPDATE rezervace SET token = :t WHERE id = :id');
             $u->execute([':t' => novy_token(), ':id' => $r['id']]);
+        }
+
+        // Dosavadní jediné heslo do administrace převedeme na plnohodnotný
+        // účet, ať se lektorka přihlásí stejným heslem jako dřív — jen nově
+        // i s e-mailem. Staré heslo v nastaveni zůstává jako záloha.
+        $maUzivatele = (int) $pdo->query('SELECT COUNT(*) FROM uzivatele')->fetchColumn();
+        if ($maUzivatele === 0) {
+            $stare = $pdo->query("SELECT hodnota FROM nastaveni WHERE klic = 'admin_hash'")->fetchColumn();
+            if ($stare !== false && (string) $stare !== '') {
+                $i = $pdo->prepare(
+                    "INSERT OR IGNORE INTO uzivatele (email, jmeno, heslo)
+                     VALUES ('info@themove.cz', 'Lenka Schwarzová', :h)"
+                );
+                $i->execute([':h' => $stare]);
+            }
         }
 
         // Klienti z dosavadních rezervací — jméno a telefon bereme z té

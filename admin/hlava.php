@@ -11,19 +11,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../inc/rezervace.php';
 require_once __DIR__ . '/../inc/klienti.php';
+require_once __DIR__ . '/../inc/prihlaseni.php';
 
-session_set_cookie_params([
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
+spust_session();
 
-if (empty($_SESSION['admin'])) {
+$pdo = db();
+$uzivatel = prihlaseny_uzivatel($pdo);
+
+if (!$uzivatel) {
     header('Location: index.php');
     exit;
 }
-
-$pdo = db();
 
 function e(?string $s): string
 {
@@ -63,9 +61,22 @@ $nadpisStranky = $nadpisStranky ?? 'Administrace';
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin.css?v=<?= substr(md5_file(__DIR__ . '/admin.css') ?: '', 0, 8) ?>">
 <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Move">
+<link rel="apple-touch-icon" href="ikony/ikona-192.png">
 </head>
 <body>
 <div class="wrap">
+
+  <script>
+    /* Registrace aplikace — umožní přidání na plochu telefonu. */
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    }
+  </script>
 
   <div class="topbar">
     <img class="logo" src="../assets/img/logo.webp" alt="The Move">
@@ -73,6 +84,7 @@ $nadpisStranky = $nadpisStranky ?? 'Administrace';
       <a class="btn btn--mini<?= $aktivniZalozka === 'terminy' ? '' : ' btn--ghost' ?>" href="index.php">Termíny</a>
       <a class="btn btn--mini<?= $aktivniZalozka === 'klienti' ? '' : ' btn--ghost' ?>" href="klienti.php">Klienti</a>
       <a class="btn btn--mini<?= $aktivniZalozka === 'novinky' ? '' : ' btn--ghost' ?>" href="novinky.php">Novinky</a>
+      <a class="btn btn--mini<?= $aktivniZalozka === 'uzivatele' ? '' : ' btn--ghost' ?>" href="uzivatele.php">Uživatelé</a>
       <a class="btn btn--ghost btn--mini" href="../index.html#terminy">Zobrazit web</a>
       <form method="post" action="index.php" style="display:inline">
         <input type="hidden" name="akce" value="odhlasit">
